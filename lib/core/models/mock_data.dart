@@ -1,157 +1,14 @@
-import 'package:flutter/material.dart';
+export 'borrower.dart';
+export 'collection_entry.dart';
+export 'daily_collection.dart';
+export 'installment.dart';
+export 'loan.dart';
 
-/// ─── Borrower Model ──────────────────────────────────────────────
-class Borrower {
-  final String id;
-  final String name;
-  final String mobile;
-  final String aadhaar;
-  final String village;
-  final String address;
-  final String pinCode;
-  final String? photoUrl;
-  final DateTime joinDate;
-  final int activeLoans;
-  final double totalOutstanding;
-  final BorrowerStatus status;
-
-  const Borrower({
-    required this.id,
-    required this.name,
-    required this.mobile,
-    required this.aadhaar,
-    required this.village,
-    required this.address,
-    required this.pinCode,
-    this.photoUrl,
-    required this.joinDate,
-    required this.activeLoans,
-    required this.totalOutstanding,
-    required this.status,
-  });
-
-  String get initials {
-    final parts = name.split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}';
-    return name.substring(0, 1);
-  }
-}
-
-enum BorrowerStatus { active, overdue, closed }
-
-/// ─── Loan Model ──────────────────────────────────────────────────
-class Loan {
-  final String id;
-  final String borrowerId;
-  final String borrowerName;
-  final double principal;
-  final double annualRate;
-  final int tenureMonths;
-  final String frequency; // daily, weekly, monthly
-  final double totalRepayable;
-  final double totalPaid;
-  final int paidInstallments;
-  final int totalInstallments;
-  final DateTime disbursementDate;
-  final DateTime? closedDate;
-  final LoanStatus status;
-  final List<Installment> installments;
-
-  const Loan({
-    required this.id,
-    required this.borrowerId,
-    required this.borrowerName,
-    required this.principal,
-    required this.annualRate,
-    required this.tenureMonths,
-    required this.frequency,
-    required this.totalRepayable,
-    required this.totalPaid,
-    required this.paidInstallments,
-    required this.totalInstallments,
-    required this.disbursementDate,
-    this.closedDate,
-    required this.status,
-    required this.installments,
-  });
-
-  double get outstanding => totalRepayable - totalPaid;
-  double get progressPercent =>
-      totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0;
-  double get installmentAmount =>
-      totalInstallments > 0 ? totalRepayable / totalInstallments : 0;
-}
-
-enum LoanStatus { active, closed, overdue, disbursed }
-
-/// ─── Installment Model ──────────────────────────────────────────
-class Installment {
-  final String id;
-  final int number;
-  final DateTime dueDate;
-  final double amount;
-  final double? paidAmount;
-  final DateTime? paidDate;
-  final InstallmentStatus status;
-
-  const Installment({
-    required this.id,
-    required this.number,
-    required this.dueDate,
-    required this.amount,
-    this.paidAmount,
-    this.paidDate,
-    required this.status,
-  });
-}
-
-enum InstallmentStatus { paid, pending, overdue, partial, advance }
-
-/// ─── Collection Entry ───────────────────────────────────────────
-class CollectionEntry {
-  final String id;
-  final String borrowerId;
-  final String borrowerName;
-  final String loanId;
-  final double amountDue;
-  final double? amountPaid;
-  final DateTime dueDate;
-  final DateTime? paidDate;
-  final String? paymentMode; // cash, upi, bank
-  final String? notes;
-  final CollectionStatus status;
-
-  const CollectionEntry({
-    required this.id,
-    required this.borrowerId,
-    required this.borrowerName,
-    required this.loanId,
-    required this.amountDue,
-    this.amountPaid,
-    required this.dueDate,
-    this.paidDate,
-    this.paymentMode,
-    this.notes,
-    required this.status,
-  });
-}
-
-enum CollectionStatus { collected, pending, overdue, partial }
-
-/// ─── Report Data ────────────────────────────────────────────────
-class DailyCollection {
-  final DateTime date;
-  final double collected;
-  final double due;
-
-  const DailyCollection({
-    required this.date,
-    required this.collected,
-    required this.due,
-  });
-
-  double get efficiency => due > 0 ? (collected / due) * 100 : 100;
-}
+import 'borrower.dart';
+import 'collection_entry.dart';
+import 'daily_collection.dart';
+import 'installment.dart';
+import 'loan.dart';
 
 /// ═══════════════════════════════════════════════════════════════════
 /// MOCK DATA — realistic sample data for all screens
@@ -561,20 +418,4 @@ class MockData {
     ];
     return DailyCollection(date: date, collected: collected[i], due: dues[i]);
   });
-
-  // ─── Color for borrower avatars ────────────────────────────────
-  static Color avatarColor(String id) {
-    final colors = [
-      const Color(0xFF065F46),
-      const Color(0xFF855300),
-      const Color(0xFF393768),
-      const Color(0xFF059669),
-      const Color(0xFF2563EB),
-      const Color(0xFFD97706),
-      const Color(0xFF0D9488),
-      const Color(0xFF6366F1),
-    ];
-    final index = int.tryParse(id.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-    return colors[index % colors.length];
-  }
 }

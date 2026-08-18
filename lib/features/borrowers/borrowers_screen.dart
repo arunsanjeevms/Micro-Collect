@@ -5,6 +5,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../core/models/mock_data.dart';
+import '../../core/utils/avatar_color.dart';
 
 /// Borrowers List Screen — searchable, filterable borrower directory
 class BorrowersScreen extends StatefulWidget {
@@ -239,7 +240,7 @@ class _BorrowerListItem extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: MockData.avatarColor(borrower.id),
+                color: avatarColorForId(borrower.id),
                 shape: BoxShape.circle,
               ),
               child: Center(

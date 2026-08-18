@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/models/mock_data.dart';
+import '../../core/utils/avatar_color.dart';
 import '../../core/utils/formatters.dart';
 
 /// Record Payment Bottom Sheet — amount, mode, notes, confirmation
@@ -105,7 +106,7 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: MockData.avatarColor(widget.entry.borrowerId),
+                color: avatarColorForId(widget.entry.borrowerId),
                 shape: BoxShape.circle,
               ),
               child: Center(

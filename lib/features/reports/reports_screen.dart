@@ -7,6 +7,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/stat_card.dart';
 import '../../core/models/mock_data.dart';
+import '../../core/utils/avatar_color.dart';
 import '../../core/utils/formatters.dart';
 
 /// Reports Screen — collection analytics with charts
@@ -614,7 +615,7 @@ class _BorrowerBreakdownItem extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: MockData.avatarColor(borrower.id),
+                  color: avatarColorForId(borrower.id),
                   shape: BoxShape.circle,
                 ),
                 child: Center(

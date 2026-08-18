@@ -6,6 +6,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../core/models/mock_data.dart';
+import '../../core/utils/avatar_color.dart';
 import '../../core/utils/formatters.dart';
 
 /// Borrower Detail Screen — profile, loans, and payment history
@@ -44,7 +45,7 @@ class BorrowerDetailScreen extends StatelessWidget {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: MockData.avatarColor(borrower.id),
+                      color: avatarColorForId(borrower.id),
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.white, width: 3),
                     ),

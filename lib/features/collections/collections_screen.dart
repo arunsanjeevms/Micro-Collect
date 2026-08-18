@@ -6,6 +6,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../core/models/mock_data.dart';
+import '../../core/utils/avatar_color.dart';
 import '../../core/utils/formatters.dart';
 import 'record_payment_sheet.dart';
 
@@ -315,7 +316,7 @@ class _CollectionListItem extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: MockData.avatarColor(entry.borrowerId),
+                    color: avatarColorForId(entry.borrowerId),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
