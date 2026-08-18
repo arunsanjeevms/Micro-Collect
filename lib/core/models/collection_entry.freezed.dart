@@ -15,7 +15,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CollectionEntry {
 
- String get id; String get borrowerId; String get borrowerName; String get loanId; double get amountDue; double? get amountPaid; DateTime get dueDate; DateTime? get paidDate; String? get paymentMode; String? get notes; CollectionStatus get status;
+ String get id; String get borrowerId; String get borrowerName; String get loanId;/// Arrears carried over from before today - a missed installment from
+/// an earlier collection day that's still outstanding. Kept separate
+/// from [amountDue] (what's due today) so the UI can show both, the
+/// way a field officer needs to when a customer owes for more than
+/// just today.
+ double get previousDue; double get amountDue; double? get amountPaid; DateTime get dueDate; DateTime? get paidDate; PaymentMode? get paymentMode; String? get notes; CollectionStatus get status;
 /// Create a copy of CollectionEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +31,16 @@ $CollectionEntryCopyWith<CollectionEntry> get copyWith => _$CollectionEntryCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CollectionEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.borrowerId, borrowerId) || other.borrowerId == borrowerId)&&(identical(other.borrowerName, borrowerName) || other.borrowerName == borrowerName)&&(identical(other.loanId, loanId) || other.loanId == loanId)&&(identical(other.amountDue, amountDue) || other.amountDue == amountDue)&&(identical(other.amountPaid, amountPaid) || other.amountPaid == amountPaid)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.paidDate, paidDate) || other.paidDate == paidDate)&&(identical(other.paymentMode, paymentMode) || other.paymentMode == paymentMode)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CollectionEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.borrowerId, borrowerId) || other.borrowerId == borrowerId)&&(identical(other.borrowerName, borrowerName) || other.borrowerName == borrowerName)&&(identical(other.loanId, loanId) || other.loanId == loanId)&&(identical(other.previousDue, previousDue) || other.previousDue == previousDue)&&(identical(other.amountDue, amountDue) || other.amountDue == amountDue)&&(identical(other.amountPaid, amountPaid) || other.amountPaid == amountPaid)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.paidDate, paidDate) || other.paidDate == paidDate)&&(identical(other.paymentMode, paymentMode) || other.paymentMode == paymentMode)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.status, status) || other.status == status));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,borrowerId,borrowerName,loanId,amountDue,amountPaid,dueDate,paidDate,paymentMode,notes,status);
+int get hashCode => Object.hash(runtimeType,id,borrowerId,borrowerName,loanId,previousDue,amountDue,amountPaid,dueDate,paidDate,paymentMode,notes,status);
 
 @override
 String toString() {
-  return 'CollectionEntry(id: $id, borrowerId: $borrowerId, borrowerName: $borrowerName, loanId: $loanId, amountDue: $amountDue, amountPaid: $amountPaid, dueDate: $dueDate, paidDate: $paidDate, paymentMode: $paymentMode, notes: $notes, status: $status)';
+  return 'CollectionEntry(id: $id, borrowerId: $borrowerId, borrowerName: $borrowerName, loanId: $loanId, previousDue: $previousDue, amountDue: $amountDue, amountPaid: $amountPaid, dueDate: $dueDate, paidDate: $paidDate, paymentMode: $paymentMode, notes: $notes, status: $status)';
 }
 
 
@@ -46,7 +51,7 @@ abstract mixin class $CollectionEntryCopyWith<$Res>  {
   factory $CollectionEntryCopyWith(CollectionEntry value, $Res Function(CollectionEntry) _then) = _$CollectionEntryCopyWithImpl;
 @useResult
 $Res call({
- String id, String borrowerId, String borrowerName, String loanId, double amountDue, double? amountPaid, DateTime dueDate, DateTime? paidDate, String? paymentMode, String? notes, CollectionStatus status
+ String id, String borrowerId, String borrowerName, String loanId, double previousDue, double amountDue, double? amountPaid, DateTime dueDate, DateTime? paidDate, PaymentMode? paymentMode, String? notes, CollectionStatus status
 });
 
 
@@ -63,18 +68,19 @@ class _$CollectionEntryCopyWithImpl<$Res>
 
 /// Create a copy of CollectionEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? borrowerId = null,Object? borrowerName = null,Object? loanId = null,Object? amountDue = null,Object? amountPaid = freezed,Object? dueDate = null,Object? paidDate = freezed,Object? paymentMode = freezed,Object? notes = freezed,Object? status = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? borrowerId = null,Object? borrowerName = null,Object? loanId = null,Object? previousDue = null,Object? amountDue = null,Object? amountPaid = freezed,Object? dueDate = null,Object? paidDate = freezed,Object? paymentMode = freezed,Object? notes = freezed,Object? status = null,}) {
   return _then(CollectionEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,borrowerId: null == borrowerId ? _self.borrowerId : borrowerId // ignore: cast_nullable_to_non_nullable
 as String,borrowerName: null == borrowerName ? _self.borrowerName : borrowerName // ignore: cast_nullable_to_non_nullable
 as String,loanId: null == loanId ? _self.loanId : loanId // ignore: cast_nullable_to_non_nullable
-as String,amountDue: null == amountDue ? _self.amountDue : amountDue // ignore: cast_nullable_to_non_nullable
+as String,previousDue: null == previousDue ? _self.previousDue : previousDue // ignore: cast_nullable_to_non_nullable
+as double,amountDue: null == amountDue ? _self.amountDue : amountDue // ignore: cast_nullable_to_non_nullable
 as double,amountPaid: freezed == amountPaid ? _self.amountPaid : amountPaid // ignore: cast_nullable_to_non_nullable
 as double?,dueDate: null == dueDate ? _self.dueDate : dueDate // ignore: cast_nullable_to_non_nullable
 as DateTime,paidDate: freezed == paidDate ? _self.paidDate : paidDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,paymentMode: freezed == paymentMode ? _self.paymentMode : paymentMode // ignore: cast_nullable_to_non_nullable
-as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as PaymentMode?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as CollectionStatus,
   ));
@@ -161,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String borrowerId,  String borrowerName,  String loanId,  double amountDue,  double? amountPaid,  DateTime dueDate,  DateTime? paidDate,  String? paymentMode,  String? notes,  CollectionStatus status)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String borrowerId,  String borrowerName,  String loanId,  double previousDue,  double amountDue,  double? amountPaid,  DateTime dueDate,  DateTime? paidDate,  PaymentMode? paymentMode,  String? notes,  CollectionStatus status)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CollectionEntry() when $default != null:
-return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.amountDue,_that.amountPaid,_that.dueDate,_that.paidDate,_that.paymentMode,_that.notes,_that.status);case _:
+return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.previousDue,_that.amountDue,_that.amountPaid,_that.dueDate,_that.paidDate,_that.paymentMode,_that.notes,_that.status);case _:
   return orElse();
 
 }
@@ -182,10 +188,10 @@ return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String borrowerId,  String borrowerName,  String loanId,  double amountDue,  double? amountPaid,  DateTime dueDate,  DateTime? paidDate,  String? paymentMode,  String? notes,  CollectionStatus status)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String borrowerId,  String borrowerName,  String loanId,  double previousDue,  double amountDue,  double? amountPaid,  DateTime dueDate,  DateTime? paidDate,  PaymentMode? paymentMode,  String? notes,  CollectionStatus status)  $default,) {final _that = this;
 switch (_that) {
 case _CollectionEntry():
-return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.amountDue,_that.amountPaid,_that.dueDate,_that.paidDate,_that.paymentMode,_that.notes,_that.status);case _:
+return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.previousDue,_that.amountDue,_that.amountPaid,_that.dueDate,_that.paidDate,_that.paymentMode,_that.notes,_that.status);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +208,10 @@ return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String borrowerId,  String borrowerName,  String loanId,  double amountDue,  double? amountPaid,  DateTime dueDate,  DateTime? paidDate,  String? paymentMode,  String? notes,  CollectionStatus status)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String borrowerId,  String borrowerName,  String loanId,  double previousDue,  double amountDue,  double? amountPaid,  DateTime dueDate,  DateTime? paidDate,  PaymentMode? paymentMode,  String? notes,  CollectionStatus status)?  $default,) {final _that = this;
 switch (_that) {
 case _CollectionEntry() when $default != null:
-return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.amountDue,_that.amountPaid,_that.dueDate,_that.paidDate,_that.paymentMode,_that.notes,_that.status);case _:
+return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.previousDue,_that.amountDue,_that.amountPaid,_that.dueDate,_that.paidDate,_that.paymentMode,_that.notes,_that.status);case _:
   return null;
 
 }
@@ -216,19 +222,25 @@ return $default(_that.id,_that.borrowerId,_that.borrowerName,_that.loanId,_that.
 /// @nodoc
 
 
-class _CollectionEntry implements CollectionEntry {
-  const _CollectionEntry({required this.id, required this.borrowerId, required this.borrowerName, required this.loanId, required this.amountDue, this.amountPaid, required this.dueDate, this.paidDate, this.paymentMode, this.notes, required this.status});
+class _CollectionEntry extends CollectionEntry {
+  const _CollectionEntry({required this.id, required this.borrowerId, required this.borrowerName, required this.loanId, this.previousDue = 0, required this.amountDue, this.amountPaid, required this.dueDate, this.paidDate, this.paymentMode, this.notes, required this.status}): super._();
   
 
 @override final  String id;
 @override final  String borrowerId;
 @override final  String borrowerName;
 @override final  String loanId;
+/// Arrears carried over from before today - a missed installment from
+/// an earlier collection day that's still outstanding. Kept separate
+/// from [amountDue] (what's due today) so the UI can show both, the
+/// way a field officer needs to when a customer owes for more than
+/// just today.
+@override@JsonKey() final  double previousDue;
 @override final  double amountDue;
 @override final  double? amountPaid;
 @override final  DateTime dueDate;
 @override final  DateTime? paidDate;
-@override final  String? paymentMode;
+@override final  PaymentMode? paymentMode;
 @override final  String? notes;
 @override final  CollectionStatus status;
 
@@ -242,16 +254,16 @@ _$CollectionEntryCopyWith<_CollectionEntry> get copyWith => __$CollectionEntryCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CollectionEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.borrowerId, borrowerId) || other.borrowerId == borrowerId)&&(identical(other.borrowerName, borrowerName) || other.borrowerName == borrowerName)&&(identical(other.loanId, loanId) || other.loanId == loanId)&&(identical(other.amountDue, amountDue) || other.amountDue == amountDue)&&(identical(other.amountPaid, amountPaid) || other.amountPaid == amountPaid)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.paidDate, paidDate) || other.paidDate == paidDate)&&(identical(other.paymentMode, paymentMode) || other.paymentMode == paymentMode)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CollectionEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.borrowerId, borrowerId) || other.borrowerId == borrowerId)&&(identical(other.borrowerName, borrowerName) || other.borrowerName == borrowerName)&&(identical(other.loanId, loanId) || other.loanId == loanId)&&(identical(other.previousDue, previousDue) || other.previousDue == previousDue)&&(identical(other.amountDue, amountDue) || other.amountDue == amountDue)&&(identical(other.amountPaid, amountPaid) || other.amountPaid == amountPaid)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.paidDate, paidDate) || other.paidDate == paidDate)&&(identical(other.paymentMode, paymentMode) || other.paymentMode == paymentMode)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.status, status) || other.status == status));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,borrowerId,borrowerName,loanId,amountDue,amountPaid,dueDate,paidDate,paymentMode,notes,status);
+int get hashCode => Object.hash(runtimeType,id,borrowerId,borrowerName,loanId,previousDue,amountDue,amountPaid,dueDate,paidDate,paymentMode,notes,status);
 
 @override
 String toString() {
-  return 'CollectionEntry(id: $id, borrowerId: $borrowerId, borrowerName: $borrowerName, loanId: $loanId, amountDue: $amountDue, amountPaid: $amountPaid, dueDate: $dueDate, paidDate: $paidDate, paymentMode: $paymentMode, notes: $notes, status: $status)';
+  return 'CollectionEntry(id: $id, borrowerId: $borrowerId, borrowerName: $borrowerName, loanId: $loanId, previousDue: $previousDue, amountDue: $amountDue, amountPaid: $amountPaid, dueDate: $dueDate, paidDate: $paidDate, paymentMode: $paymentMode, notes: $notes, status: $status)';
 }
 
 
@@ -262,7 +274,7 @@ abstract mixin class _$CollectionEntryCopyWith<$Res> implements $CollectionEntry
   factory _$CollectionEntryCopyWith(_CollectionEntry value, $Res Function(_CollectionEntry) _then) = __$CollectionEntryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String borrowerId, String borrowerName, String loanId, double amountDue, double? amountPaid, DateTime dueDate, DateTime? paidDate, String? paymentMode, String? notes, CollectionStatus status
+ String id, String borrowerId, String borrowerName, String loanId, double previousDue, double amountDue, double? amountPaid, DateTime dueDate, DateTime? paidDate, PaymentMode? paymentMode, String? notes, CollectionStatus status
 });
 
 
@@ -279,18 +291,19 @@ class __$CollectionEntryCopyWithImpl<$Res>
 
 /// Create a copy of CollectionEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? borrowerId = null,Object? borrowerName = null,Object? loanId = null,Object? amountDue = null,Object? amountPaid = freezed,Object? dueDate = null,Object? paidDate = freezed,Object? paymentMode = freezed,Object? notes = freezed,Object? status = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? borrowerId = null,Object? borrowerName = null,Object? loanId = null,Object? previousDue = null,Object? amountDue = null,Object? amountPaid = freezed,Object? dueDate = null,Object? paidDate = freezed,Object? paymentMode = freezed,Object? notes = freezed,Object? status = null,}) {
   return _then(_CollectionEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,borrowerId: null == borrowerId ? _self.borrowerId : borrowerId // ignore: cast_nullable_to_non_nullable
 as String,borrowerName: null == borrowerName ? _self.borrowerName : borrowerName // ignore: cast_nullable_to_non_nullable
 as String,loanId: null == loanId ? _self.loanId : loanId // ignore: cast_nullable_to_non_nullable
-as String,amountDue: null == amountDue ? _self.amountDue : amountDue // ignore: cast_nullable_to_non_nullable
+as String,previousDue: null == previousDue ? _self.previousDue : previousDue // ignore: cast_nullable_to_non_nullable
+as double,amountDue: null == amountDue ? _self.amountDue : amountDue // ignore: cast_nullable_to_non_nullable
 as double,amountPaid: freezed == amountPaid ? _self.amountPaid : amountPaid // ignore: cast_nullable_to_non_nullable
 as double?,dueDate: null == dueDate ? _self.dueDate : dueDate // ignore: cast_nullable_to_non_nullable
 as DateTime,paidDate: freezed == paidDate ? _self.paidDate : paidDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,paymentMode: freezed == paymentMode ? _self.paymentMode : paymentMode // ignore: cast_nullable_to_non_nullable
-as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as PaymentMode?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as CollectionStatus,
   ));

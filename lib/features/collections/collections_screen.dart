@@ -395,7 +395,7 @@ class _CollectionListItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        entry.paymentMode!.toUpperCase(),
+                        entry.paymentMode!.name.toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -452,9 +452,9 @@ class _CollectionListItem extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            entry.paymentMode == 'cash'
+                            entry.paymentMode == PaymentMode.cash
                                 ? Icons.money
-                                : entry.paymentMode == 'upi'
+                                : entry.paymentMode == PaymentMode.upi
                                 ? Icons.qr_code
                                 : Icons.account_balance,
                             size: 12,
@@ -462,7 +462,7 @@ class _CollectionListItem extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            entry.paymentMode!.toUpperCase(),
+                            entry.paymentMode!.name.toUpperCase(),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,

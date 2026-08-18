@@ -234,7 +234,7 @@ class DemoSeed {
       amountPaid: 2200,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'cash',
+      paymentMode: PaymentMode.cash,
       status: CollectionStatus.collected,
     ),
     CollectionEntry(
@@ -246,7 +246,7 @@ class DemoSeed {
       amountPaid: 62,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'upi',
+      paymentMode: PaymentMode.upi,
       status: CollectionStatus.collected,
     ),
     CollectionEntry(
@@ -263,6 +263,7 @@ class DemoSeed {
       borrowerId: 'B002',
       borrowerName: 'Lakshmi Devi',
       loanId: 'L002',
+      previousDue: 640, // one missed weekly instalment carried over
       amountDue: 640,
       dueDate: now,
       status: CollectionStatus.overdue,
@@ -272,11 +273,12 @@ class DemoSeed {
       borrowerId: 'B006',
       borrowerName: 'Sarita Bai',
       loanId: 'L007',
+      previousDue: 350, // partial arrears from a prior missed instalment
       amountDue: 850,
       amountPaid: 500,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'cash',
+      paymentMode: PaymentMode.cash,
       notes: 'Will pay remaining tomorrow',
       status: CollectionStatus.partial,
     ),
@@ -298,7 +300,7 @@ class DemoSeed {
       amountPaid: 2000,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'bank',
+      paymentMode: PaymentMode.bank,
       status: CollectionStatus.collected,
     ),
   ];

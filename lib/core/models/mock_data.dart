@@ -326,7 +326,7 @@ class MockData {
       amountPaid: 2200,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'cash',
+      paymentMode: PaymentMode.cash,
       status: CollectionStatus.collected,
     ),
     CollectionEntry(
@@ -338,7 +338,7 @@ class MockData {
       amountPaid: 62,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'upi',
+      paymentMode: PaymentMode.upi,
       status: CollectionStatus.collected,
     ),
     CollectionEntry(
@@ -368,7 +368,7 @@ class MockData {
       amountPaid: 500,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'cash',
+      paymentMode: PaymentMode.cash,
       notes: 'Will pay remaining tomorrow',
       status: CollectionStatus.partial,
     ),
@@ -390,7 +390,7 @@ class MockData {
       amountPaid: 2000,
       dueDate: now,
       paidDate: now,
-      paymentMode: 'bank',
+      paymentMode: PaymentMode.bank,
       status: CollectionStatus.collected,
     ),
   ];
