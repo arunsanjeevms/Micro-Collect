@@ -1,30 +1,23 @@
-/// ─── Collection Entry ───────────────────────────────────────────
-class CollectionEntry {
-  final String id;
-  final String borrowerId;
-  final String borrowerName;
-  final String loanId;
-  final double amountDue;
-  final double? amountPaid;
-  final DateTime dueDate;
-  final DateTime? paidDate;
-  final String? paymentMode; // cash, upi, bank
-  final String? notes;
-  final CollectionStatus status;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const CollectionEntry({
-    required this.id,
-    required this.borrowerId,
-    required this.borrowerName,
-    required this.loanId,
-    required this.amountDue,
-    this.amountPaid,
-    required this.dueDate,
-    this.paidDate,
-    this.paymentMode,
-    this.notes,
-    required this.status,
-  });
-}
+part 'collection_entry.freezed.dart';
 
 enum CollectionStatus { collected, pending, overdue, partial }
+
+/// ─── Collection Entry ───────────────────────────────────────────
+@freezed
+abstract class CollectionEntry with _$CollectionEntry {
+  const factory CollectionEntry({
+    required String id,
+    required String borrowerId,
+    required String borrowerName,
+    required String loanId,
+    required double amountDue,
+    double? amountPaid,
+    required DateTime dueDate,
+    DateTime? paidDate,
+    String? paymentMode, // cash, upi, bank
+    String? notes,
+    required CollectionStatus status,
+  }) = _CollectionEntry;
+}
