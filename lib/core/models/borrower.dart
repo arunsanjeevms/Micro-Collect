@@ -1,38 +1,34 @@
-/// ─── Borrower Model ──────────────────────────────────────────────
-class Borrower {
-  final String id;
-  final String name;
-  final String mobile;
-  final String aadhaar;
-  final String village;
-  final String address;
-  final String pinCode;
-  final String? photoUrl;
-  final DateTime joinDate;
-  final int activeLoans;
-  final double totalOutstanding;
-  final BorrowerStatus status;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const Borrower({
-    required this.id,
-    required this.name,
-    required this.mobile,
-    required this.aadhaar,
-    required this.village,
-    required this.address,
-    required this.pinCode,
-    this.photoUrl,
-    required this.joinDate,
-    required this.activeLoans,
-    required this.totalOutstanding,
-    required this.status,
-  });
-
-  String get initials {
-    final parts = name.split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}';
-    return name.substring(0, 1);
-  }
-}
+part 'borrower.freezed.dart';
 
 enum BorrowerStatus { active, overdue, closed }
+
+/// ─── Borrower Model ──────────────────────────────────────────────
+@freezed
+abstract class Borrower with _$Borrower {
+  const Borrower._();
+
+  const factory Borrower({
+    required String id,
+    required String name,
+    required String mobile,
+    required String aadhaar,
+    required String village,
+    required String address,
+    required String pinCode,
+    String? photoUrl,
+    required DateTime joinDate,
+    required int activeLoans,
+    required double totalOutstanding,
+    required BorrowerStatus status,
+  }) = _Borrower;
+
+  String get initials {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      return '${parts[0][0]}${parts[1][0]}';
+    }
+    return name.isEmpty ? '?' : name.substring(0, 1);
+  }
+}
