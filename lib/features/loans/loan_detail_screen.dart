@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../core/models/mock_data.dart';
@@ -16,7 +17,19 @@ class LoanDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loan = MockData.loans.firstWhere((l) => l.id == loanId);
+    final matches = MockData.loans.where((l) => l.id == loanId);
+    if (matches.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Loan')),
+        body: EmptyStateWidget(
+          icon: Icons.receipt_long_outlined,
+          title: 'Loan not found',
+          description:
+              'This loan may have been removed or the link is invalid.',
+        ),
+      );
+    }
+    final loan = matches.first;
 
     return Scaffold(
       appBar: AppBar(

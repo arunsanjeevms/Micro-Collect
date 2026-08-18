@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/status_badge.dart';
 import '../../core/models/mock_data.dart';
@@ -17,7 +19,19 @@ class BorrowerDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borrower = MockData.borrowers.firstWhere((b) => b.id == borrowerId);
+    final borrowerMatches = MockData.borrowers.where((b) => b.id == borrowerId);
+    if (borrowerMatches.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Borrower')),
+        body: EmptyStateWidget(
+          icon: Icons.person_off_outlined,
+          title: 'Borrower not found',
+          description:
+              'This borrower may have been removed or the link is invalid.',
+        ),
+      );
+    }
+    final borrower = borrowerMatches.first;
     final borrowerLoans = MockData.loans
         .where((l) => l.borrowerId == borrowerId)
         .toList();
@@ -148,12 +162,23 @@ class BorrowerDetailScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
 
             // ─── Loans Section ───────────────────────────────────
-            Text(
-              'LOANS',
-              style: AppTypography.labelSm.copyWith(
-                color: AppColors.onSurfaceVariant,
-                letterSpacing: 1.2,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'LOANS',
+                  style: AppTypography.labelSm.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () =>
+                      context.push('/loans/create?borrowerId=$borrowerId'),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('New Loan'),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -178,7 +203,10 @@ class BorrowerDetailScreen extends StatelessWidget {
               ...borrowerLoans.map(
                 (loan) => Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: _LoanCard(loan: loan),
+                  child: _LoanCard(
+                    loan: loan,
+                    onTap: () => context.push('/loans/${loan.id}'),
+                  ),
                 ),
               ),
 
@@ -330,8 +358,9 @@ class _MiniStatCard extends StatelessWidget {
 // ─── Loan Card ───────────────────────────────────────────────────
 class _LoanCard extends StatelessWidget {
   final Loan loan;
+  final VoidCallback? onTap;
 
-  const _LoanCard({required this.loan});
+  const _LoanCard({required this.loan, this.onTap});
 
   StatusType get _statusType {
     switch (loan.status) {
@@ -354,99 +383,103 @@ class _LoanCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.cardBorder),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border(
-            left: BorderSide(
-              color: loan.status == LoanStatus.overdue
-                  ? AppColors.danger
-                  : loan.status == LoanStatus.closed
-                  ? AppColors.onSurfaceVariant
-                  : AppColors.primary,
-              width: 4,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border(
+              left: BorderSide(
+                color: loan.status == LoanStatus.overdue
+                    ? AppColors.danger
+                    : loan.status == LoanStatus.closed
+                    ? AppColors.onSurfaceVariant
+                    : AppColors.primary,
+                width: 4,
+              ),
             ),
           ),
-        ),
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  loan.id,
-                  style: AppTypography.labelMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 12,
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    loan.id,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                StatusBadge(status: _statusType, compact: true),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  AppFormatters.currency(loan.principal),
-                  style: AppTypography.financialMd.copyWith(
-                    fontSize: 20,
-                    color: AppColors.onSurface,
+                  const Spacer(),
+                  StatusBadge(status: _statusType, compact: true),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    AppFormatters.currency(loan.principal),
+                    style: AppTypography.financialMd.copyWith(
+                      fontSize: 20,
+                      color: AppColors.onSurface,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  '${loan.annualRate}% · ${loan.tenureMonths}mo · ${loan.frequency}',
-                  style: AppTypography.bodySm.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 12,
+                  const Spacer(),
+                  Text(
+                    '${loan.annualRate}% · ${loan.tenureMonths}mo · ${loan.frequency}',
+                    style: AppTypography.bodySm.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                ],
+              ),
+              const SizedBox(height: 12),
 
-            // Progress bar
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${loan.paidInstallments}/${loan.totalInstallments} installments',
-                      style: AppTypography.bodySm.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
+              // Progress bar
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${loan.paidInstallments}/${loan.totalInstallments} installments',
+                        style: AppTypography.bodySm.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${loan.progressPercent.toStringAsFixed(0)}%',
-                      style: AppTypography.labelMd.copyWith(
-                        color: AppColors.primary,
-                        fontSize: 12,
+                      Text(
+                        '${loan.progressPercent.toStringAsFixed(0)}%',
+                        style: AppTypography.labelMd.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: loan.progressPercent / 100,
-                    minHeight: 6,
-                    backgroundColor: AppColors.surfaceContainer,
-                    valueColor: AlwaysStoppedAnimation(
-                      loan.status == LoanStatus.overdue
-                          ? AppColors.danger
-                          : AppColors.success,
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: loan.progressPercent / 100,
+                      minHeight: 6,
+                      backgroundColor: AppColors.surfaceContainer,
+                      valueColor: AlwaysStoppedAnimation(
+                        loan.status == LoanStatus.overdue
+                            ? AppColors.danger
+                            : AppColors.success,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

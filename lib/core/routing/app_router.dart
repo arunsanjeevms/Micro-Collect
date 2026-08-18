@@ -59,6 +59,14 @@ GoRouter appRouter(Ref ref) {
       ),
 
       // ─── Detail Routes (outside shell, full-screen) ──────────
+      // Static paths must be registered before ":id" wildcards below -
+      // go_router matches in declaration order, so "/borrowers/add" would
+      // otherwise resolve as BorrowerDetailScreen(borrowerId: "add").
+      GoRoute(
+        path: '/borrowers/add',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AddBorrowerScreen(),
+      ),
       GoRoute(
         path: '/borrowers/:id',
         parentNavigatorKey: _rootNavigatorKey,
@@ -66,20 +74,17 @@ GoRouter appRouter(Ref ref) {
             BorrowerDetailScreen(borrowerId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: '/borrowers/add',
+        path: '/loans/create',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const AddBorrowerScreen(),
+        builder: (context, state) => CreateLoanScreen(
+          borrowerId: state.uri.queryParameters['borrowerId'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/loans/:id',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             LoanDetailScreen(loanId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/loans/create',
-        parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const CreateLoanScreen(),
       ),
     ],
   );

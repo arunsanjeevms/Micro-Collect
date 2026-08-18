@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/glass_card.dart';
+import '../../core/models/mock_data.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/loan_calculator.dart';
 
 /// Create Loan Screen — form with live EMI preview
 class CreateLoanScreen extends StatefulWidget {
-  final String? borrowerName;
+  final String borrowerId;
 
-  const CreateLoanScreen({super.key, this.borrowerName});
+  const CreateLoanScreen({super.key, required this.borrowerId});
 
   @override
   State<CreateLoanScreen> createState() => _CreateLoanScreenState();
@@ -89,8 +91,37 @@ class _CreateLoanScreenState extends State<CreateLoanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final borrowerMatches = MockData.borrowers.where(
+      (b) => b.id == widget.borrowerId,
+    );
+    if (borrowerMatches.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('New Loan')),
+        body: EmptyStateWidget(
+          icon: Icons.person_off_outlined,
+          title: 'Borrower not found',
+          description: 'Open this screen from a borrower\'s profile.',
+        ),
+      );
+    }
+    final borrower = borrowerMatches.first;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Loan')),
+      appBar: AppBar(
+        title: const Text('New Loan'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(20),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'for ${borrower.name}',
+              style: AppTypography.bodySm.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.marginMobile),
         child: Form(

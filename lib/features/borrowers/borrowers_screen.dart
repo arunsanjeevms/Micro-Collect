@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -192,11 +193,7 @@ class _BorrowersScreenState extends State<BorrowersScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const _AddBorrowerPlaceholder()),
-          );
-        },
+        onPressed: () => context.push('/borrowers/add'),
         icon: const Icon(Icons.person_add_rounded),
         label: const Text('Add'),
       ),
@@ -400,15 +397,5 @@ class _FilterChip extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Placeholder used for navigation — will be replaced by actual AddBorrowerScreen
-class _AddBorrowerPlaceholder extends StatelessWidget {
-  const _AddBorrowerPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Add Borrower')));
   }
 }
