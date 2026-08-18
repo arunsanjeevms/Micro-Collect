@@ -8,8 +8,10 @@ import 'package:microcollect/data/mock/mock_database.dart';
 import 'package:microcollect/data/mock/mock_gateway.dart';
 import 'package:microcollect/data/mock/mock_loan_repository.dart';
 import 'package:microcollect/data/repositories/borrower_repository.dart';
+import 'package:microcollect/data/repositories/collection_repository.dart';
 import 'package:microcollect/data/repositories/loan_repository.dart';
 import 'package:microcollect/core/errors/app_exception.dart';
+import 'package:microcollect/core/models/collection_entry.dart';
 
 MockGateway _instantGateway({Set<MockOp> failingOps = const {}}) => MockGateway(
   () => DevSettings(latency: LatencyProfile.instant, failingOps: failingOps),
@@ -131,5 +133,59 @@ void main() {
         expect(summary.efficiency, 100);
       },
     );
+
+    test(
+      'recordPayment applies through the gateway and persists in the database',
+      () async {
+        final repo = MockCollectionRepository(db, _instantGateway());
+
+        final receipt = await repo.recordPayment(
+          const RecordPaymentInput(
+            collectionId: 'C006',
+            amount: 1520,
+            mode: PaymentMode.upi,
+          ),
+        );
+
+        expect(receipt.payment.amount, 1520);
+        final storedEntry = db
+            .collectionsForDate(DateTime.now())
+            .firstWhere((e) => e.id == 'C006');
+        expect(storedEntry.status, CollectionStatus.collected);
+      },
+    );
+
+    test('recordPayment surfaces an injected payment failure', () {
+      final repo = MockCollectionRepository(
+        db,
+        _instantGateway(failingOps: {MockOp.payment}),
+      );
+
+      expect(
+        repo.recordPayment(
+          const RecordPaymentInput(
+            collectionId: 'C006',
+            amount: 1520,
+            mode: PaymentMode.upi,
+          ),
+        ),
+        throwsA(isA<PaymentFailedException>()),
+      );
+    });
+
+    test('paymentsForLoan reflects a payment just recorded', () async {
+      final repo = MockCollectionRepository(db, _instantGateway());
+      await repo.recordPayment(
+        const RecordPaymentInput(
+          collectionId: 'C006',
+          amount: 1520,
+          mode: PaymentMode.upi,
+        ),
+      );
+
+      final payments = await repo.paymentsForLoan('L008');
+      expect(payments, hasLength(1));
+      expect(payments.single.amount, 1520);
+    });
   });
 }

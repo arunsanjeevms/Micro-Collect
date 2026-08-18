@@ -1,4 +1,5 @@
 import '../../core/models/collection_entry.dart';
+import '../../core/models/payment.dart';
 import '../dev/mock_op.dart';
 import '../repositories/collection_repository.dart';
 import 'mock_database.dart';
@@ -18,6 +19,23 @@ class MockCollectionRepository implements CollectionRepository {
   Future<CollectionSummary> summaryForDate(DateTime date) => _gateway.call(
     MockOp.read,
     () => _summarize(_db.collectionsForDate(date)),
+  );
+
+  @override
+  Future<PaymentReceipt> recordPayment(RecordPaymentInput input) =>
+      _gateway.call(MockOp.payment, () => _db.recordPayment(input));
+
+  @override
+  Future<List<Payment>> paymentsForLoan(String loanId) =>
+      _gateway.call(MockOp.read, () => _db.paymentsForLoan(loanId));
+
+  @override
+  Future<List<Payment>> paymentsForBorrower(
+    String borrowerId, {
+    int limit = 10,
+  }) => _gateway.call(
+    MockOp.read,
+    () => _db.paymentsForBorrower(borrowerId, limit: limit),
   );
 
   CollectionSummary _summarize(List<CollectionEntry> entries) {

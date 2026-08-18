@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:microcollect/core/data/entity_kind.dart';
+import 'package:microcollect/core/errors/app_exception.dart';
 import 'package:microcollect/core/models/borrower.dart';
+import 'package:microcollect/core/models/collection_entry.dart';
+import 'package:microcollect/core/models/installment.dart';
 import 'package:microcollect/core/models/loan.dart';
 import 'package:microcollect/data/mock/mock_database.dart';
 import 'package:microcollect/data/repositories/borrower_repository.dart';
+import 'package:microcollect/data/repositories/collection_repository.dart';
 import 'package:microcollect/data/repositories/loan_repository.dart';
 
 void main() {
@@ -202,6 +206,236 @@ void main() {
       expect(after.totalOutstanding, closeTo(loan.totalRepayable, 1));
       expect(after.status, BorrowerStatus.active);
     });
+  });
+
+  group('MockDatabase.recordPayment', () {
+    late MockDatabase db;
+
+    setUp(() => db = MockDatabase());
+    tearDown(() => db.dispose());
+
+    test('rejects a non-positive amount', () {
+      expect(
+        () => db.recordPayment(
+          const RecordPaymentInput(
+            collectionId: 'C006',
+            amount: 0,
+            mode: PaymentMode.cash,
+          ),
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+    });
+
+    test('rejects an unknown collection entry', () {
+      expect(
+        () => db.recordPayment(
+          const RecordPaymentInput(
+            collectionId: 'C999',
+            amount: 100,
+            mode: PaymentMode.cash,
+          ),
+        ),
+        throwsA(isA<NotFoundException>()),
+      );
+    });
+
+    test('a full payment marks the collection entry collected', () {
+      final entryBefore = db
+          .collectionsForDate(DateTime.now())
+          .firstWhere((c) => c.id == 'C006'); // Mahesh Goud, pending, due 1520
+
+      final receipt = db.recordPayment(
+        RecordPaymentInput(
+          collectionId: 'C006',
+          amount: entryBefore.amountDue,
+          mode: PaymentMode.upi,
+        ),
+      );
+
+      final entryAfter = db
+          .collectionsForDate(DateTime.now())
+          .firstWhere((c) => c.id == 'C006');
+      expect(entryAfter.status, CollectionStatus.collected);
+      expect(entryAfter.amountPaid, entryBefore.amountDue);
+      expect(entryAfter.paymentMode, PaymentMode.upi);
+      expect(receipt.payment.amount, entryBefore.amountDue);
+      expect(receipt.payment.mode, PaymentMode.upi);
+    });
+
+    test(
+      'a partial payment marks the collection entry partial, not collected',
+      () {
+        final entryBefore = db
+            .collectionsForDate(DateTime.now())
+            .firstWhere((c) => c.id == 'C006');
+
+        db.recordPayment(
+          RecordPaymentInput(
+            collectionId: 'C006',
+            amount: entryBefore.amountDue / 2,
+            mode: PaymentMode.cash,
+          ),
+        );
+
+        final entryAfter = db
+            .collectionsForDate(DateTime.now())
+            .firstWhere((c) => c.id == 'C006');
+        expect(entryAfter.status, CollectionStatus.partial);
+        expect(entryAfter.amountPaid, entryBefore.amountDue / 2);
+      },
+    );
+
+    test('a payment covering previousDue and amountDue together collects the entry', () {
+      final entryBefore = db
+          .collectionsForDate(DateTime.now())
+          .firstWhere(
+            (c) => c.id == 'C004',
+          ); // Lakshmi Devi: previousDue 640 + amountDue 640
+      expect(entryBefore.previousDue, greaterThan(0));
+
+      db.recordPayment(
+        RecordPaymentInput(
+          collectionId: 'C004',
+          amount: entryBefore.totalDue,
+          mode: PaymentMode.cash,
+        ),
+      );
+
+      final entryAfter = db
+          .collectionsForDate(DateTime.now())
+          .firstWhere((c) => c.id == 'C004');
+      expect(entryAfter.status, CollectionStatus.collected);
+    });
+
+    test('updates the loan\'s totalPaid and marks the paid instalment', () {
+      final loanBefore = db.loan('L008')!; // Mahesh Goud's loan (C006)
+      final loanTotalPaidBefore = loanBefore.totalPaid;
+
+      db.recordPayment(
+        const RecordPaymentInput(
+          collectionId: 'C006',
+          amount: 1520,
+          mode: PaymentMode.upi,
+        ),
+      );
+
+      final loanAfter = db.loan('L008')!;
+      expect(loanAfter.totalPaid, loanTotalPaidBefore + 1520);
+      expect(
+        loanAfter.installments.any((i) => i.status == InstallmentStatus.paid),
+        isTrue,
+      );
+    });
+
+    test(
+      'closes the loan when the payment brings totalPaid to totalRepayable',
+      () {
+        final loan = db.loan('L006')!; // Venkat Rao, active
+        final outstanding = loan.outstanding;
+
+        db.recordPayment(
+          RecordPaymentInput(
+            collectionId: 'C003', // Venkat Rao's today entry, loan L006
+            amount: outstanding,
+            mode: PaymentMode.cash,
+          ),
+        );
+
+        final loanAfter = db.loan('L006')!;
+        expect(loanAfter.status, LoanStatus.closed);
+        expect(loanAfter.closedDate, isNotNull);
+        expect(loanAfter.outstanding, 0);
+      },
+    );
+
+    test('recomputes the borrower\'s outstanding balance after payment', () {
+      final loan = db.loan('L006')!;
+      final borrowerBefore = db.borrower('B005')!;
+
+      db.recordPayment(
+        const RecordPaymentInput(
+          collectionId: 'C003',
+          amount: 1000,
+          mode: PaymentMode.cash,
+        ),
+      );
+
+      final borrowerAfter = db.borrower('B005')!;
+      expect(
+        borrowerAfter.totalOutstanding,
+        closeTo(borrowerBefore.totalOutstanding - 1000, 0.01),
+      );
+      expect(loan.borrowerId, 'B005');
+    });
+
+    test(
+      'records a Payment with a receipt number and returns it in the receipt',
+      () {
+        final receipt = db.recordPayment(
+          const RecordPaymentInput(
+            collectionId: 'C006',
+            amount: 500,
+            mode: PaymentMode.cash,
+            notes: 'Partial today',
+          ),
+        );
+
+        expect(receipt.payment.receiptNo, startsWith('RCP-'));
+        expect(receipt.payment.borrowerId, 'B007');
+        expect(receipt.payment.loanId, 'L008');
+        expect(receipt.payment.notes, 'Partial today');
+        expect(db.paymentsForLoan('L008'), contains(receipt.payment));
+      },
+    );
+
+    test('paymentsForBorrower returns only that borrower\'s payments, newest first', () {
+      db.recordPayment(
+        const RecordPaymentInput(
+          collectionId: 'C006',
+          amount: 500,
+          mode: PaymentMode.cash,
+        ),
+      );
+      db.recordPayment(
+        const RecordPaymentInput(
+          collectionId: 'C006',
+          amount: 300,
+          mode: PaymentMode.cash,
+        ),
+      );
+
+      final payments = db.paymentsForBorrower('B007');
+      expect(payments, hasLength(2));
+      expect(payments.first.amount, 300); // most recent first
+    });
+
+    test(
+      'emits a DataChange covering loan, borrower, collection and payment',
+      () async {
+        final future = db.changes.first;
+
+        db.recordPayment(
+          const RecordPaymentInput(
+            collectionId: 'C006',
+            amount: 500,
+            mode: PaymentMode.cash,
+          ),
+        );
+
+        final change = await future;
+        expect(
+          change.kinds,
+          containsAll({
+            EntityKind.loan,
+            EntityKind.installment,
+            EntityKind.borrower,
+            EntityKind.collection,
+            EntityKind.payment,
+          }),
+        );
+      },
+    );
   });
 
   group('MockDatabase.reset / loadDemo', () {

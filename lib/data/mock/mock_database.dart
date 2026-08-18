@@ -4,12 +4,16 @@ import '../../core/data/change_feed.dart';
 import '../../core/data/entity_kind.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/models/borrower.dart';
+import '../../core/models/installment.dart';
 import '../../core/models/loan.dart';
 import '../../core/models/collection_entry.dart';
 import '../../core/models/daily_collection.dart';
+import '../../core/models/payment.dart';
 import '../../core/utils/loan_calculator.dart';
+import '../../core/utils/payment_allocator.dart';
 import '../../core/utils/schedule_builder.dart';
 import '../repositories/borrower_repository.dart';
+import '../repositories/collection_repository.dart';
 import '../repositories/loan_repository.dart';
 import 'demo_seed.dart';
 
@@ -27,6 +31,7 @@ class MockDatabase implements ChangeFeed {
   final Map<String, Borrower> _borrowers = {};
   final Map<String, Loan> _loans = {};
   final Map<String, CollectionEntry> _collections = {};
+  final Map<String, Payment> _payments = {};
   List<DailyCollection> _weeklyCollections = [];
 
   final _changesController = StreamController<DataChange>.broadcast();
@@ -47,13 +52,31 @@ class MockDatabase implements ChangeFeed {
   List<Loan> loansForBorrower(String borrowerId) =>
       _loans.values.where((l) => l.borrowerId == borrowerId).toList();
 
-  List<CollectionEntry> collectionsForDate(DateTime date) => _collections
-      .values
-      .where((c) => _isSameDate(c.dueDate, date))
-      .toList();
+  List<CollectionEntry> collectionsForDate(DateTime date) =>
+      _collections.values.where((c) => _isSameDate(c.dueDate, date)).toList();
 
   List<DailyCollection> weeklyCollections() =>
       List.unmodifiable(_weeklyCollections);
+
+  List<Payment> paymentsForLoan(String loanId) =>
+      _payments.values.where((p) => p.loanId == loanId).toList()
+        ..sort(_newestFirst);
+
+  List<Payment> paymentsForBorrower(String borrowerId, {int limit = 10}) {
+    final all =
+        _payments.values.where((p) => p.borrowerId == borrowerId).toList()
+          ..sort(_newestFirst);
+    return all.take(limit).toList();
+  }
+
+  /// paidAt alone isn't a safe sort key: two payments recorded moments
+  /// apart can land in the same millisecond, and List.sort isn't stable
+  /// for ties. Payment ids are assigned sequentially, so they break the
+  /// tie in actual recording order.
+  int _newestFirst(Payment a, Payment b) {
+    final byDate = b.paidAt.compareTo(a.paidAt);
+    return byDate != 0 ? byDate : b.id.compareTo(a.id);
+  }
 
   // ─── Writes ─────────────────────────────────────────────────────
 
@@ -127,6 +150,112 @@ class MockDatabase implements ChangeFeed {
     return loan;
   }
 
+  /// The one transaction the rest of this architecture exists for: a
+  /// single payment touches the loan's instalment schedule, its totals and
+  /// status, the borrower's derived outstanding/status, today's collection
+  /// entry, and the payment log - all updated together and published as
+  /// one DataChange, so every screen watching any of those stays correct
+  /// without needing to know a payment is what changed.
+  PaymentReceipt recordPayment(RecordPaymentInput input) {
+    if (input.amount <= 0) {
+      throw const ValidationException('Amount must be greater than zero');
+    }
+
+    final entry = _collections[input.collectionId];
+    if (entry == null) {
+      throw NotFoundException('Collection entry', input.collectionId);
+    }
+    final loan = _loans[entry.loanId];
+    if (loan == null) {
+      throw NotFoundException('Loan', entry.loanId);
+    }
+
+    final now = DateTime.now();
+
+    final allocation = PaymentAllocator.allocate(
+      installments: loan.installments,
+      amount: input.amount,
+      asOf: now,
+    );
+
+    final newTotalPaid = loan.totalPaid + input.amount;
+    final paidInstallments = allocation.updatedInstallments
+        .where(
+          (i) =>
+              i.status == InstallmentStatus.paid ||
+              i.status == InstallmentStatus.advance,
+        )
+        .length;
+    final isClosed = newTotalPaid >= loan.totalRepayable;
+    final stillOverdue = allocation.updatedInstallments.any(
+      (i) => i.status == InstallmentStatus.overdue,
+    );
+
+    final updatedLoan = loan.copyWith(
+      installments: allocation.updatedInstallments,
+      totalPaid: newTotalPaid,
+      paidInstallments: paidInstallments,
+      status: isClosed
+          ? LoanStatus.closed
+          : stillOverdue
+          ? LoanStatus.overdue
+          : LoanStatus.active,
+      closedDate: isClosed ? now : loan.closedDate,
+    );
+    _loans[loan.id] = updatedLoan;
+
+    final paymentId = _nextId('P', _payments.keys);
+    final payment = Payment(
+      id: paymentId,
+      receiptNo: 'RCP-${paymentId.substring(1)}',
+      borrowerId: loan.borrowerId,
+      borrowerName: loan.borrowerName,
+      loanId: loan.id,
+      installmentIds: allocation.touchedInstallmentIds,
+      amount: input.amount,
+      mode: input.mode,
+      notes: input.notes,
+      paidAt: now,
+    );
+    _payments[paymentId] = payment;
+
+    final paidTowardsEntry = (entry.amountPaid ?? 0) + input.amount;
+    _collections[entry.id] = entry.copyWith(
+      amountPaid: paidTowardsEntry,
+      paidDate: now,
+      paymentMode: input.mode,
+      notes: input.notes ?? entry.notes,
+      status: paidTowardsEntry >= entry.totalDue
+          ? CollectionStatus.collected
+          : CollectionStatus.partial,
+    );
+
+    _recomputeBorrower(loan.borrowerId);
+
+    _emit(
+      const DataChange({
+        EntityKind.loan,
+        EntityKind.installment,
+        EntityKind.borrower,
+        EntityKind.collection,
+        EntityKind.payment,
+        EntityKind.report,
+      }),
+    );
+
+    final touchedNumbers = allocation.updatedInstallments
+        .where((i) => allocation.touchedInstallmentIds.contains(i.id))
+        .map((i) => i.number)
+        .toList();
+
+    return PaymentReceipt(
+      payment: payment,
+      touchedInstallmentNumbers: touchedNumbers,
+      newLoanOutstanding: updatedLoan.outstanding,
+      newBorrowerOutstanding: _borrowers[loan.borrowerId]!.totalOutstanding,
+    );
+  }
+
   void loadDemo() {
     _borrowers
       ..clear()
@@ -140,6 +269,7 @@ class MockDatabase implements ChangeFeed {
       ..addEntries(
         DemoSeed.todayCollections(now).map((c) => MapEntry(c.id, c)),
       );
+    _payments.clear();
     _weeklyCollections = DemoSeed.weeklyCollections(now);
     for (final id in _borrowers.keys.toList()) {
       _recomputeBorrower(id);
@@ -151,6 +281,7 @@ class MockDatabase implements ChangeFeed {
     _borrowers.clear();
     _loans.clear();
     _collections.clear();
+    _payments.clear();
     _weeklyCollections = [];
     _emit(const DataChange.all());
   }
