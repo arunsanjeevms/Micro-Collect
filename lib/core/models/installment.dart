@@ -1,22 +1,19 @@
-/// ─── Installment Model ──────────────────────────────────────────
-class Installment {
-  final String id;
-  final int number;
-  final DateTime dueDate;
-  final double amount;
-  final double? paidAmount;
-  final DateTime? paidDate;
-  final InstallmentStatus status;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const Installment({
-    required this.id,
-    required this.number,
-    required this.dueDate,
-    required this.amount,
-    this.paidAmount,
-    this.paidDate,
-    required this.status,
-  });
-}
+part 'installment.freezed.dart';
 
 enum InstallmentStatus { paid, pending, overdue, partial, advance }
+
+/// ─── Installment Model ──────────────────────────────────────────
+@freezed
+abstract class Installment with _$Installment {
+  const factory Installment({
+    required String id,
+    required int number,
+    required DateTime dueDate,
+    required double amount,
+    double? paidAmount,
+    DateTime? paidDate,
+    required InstallmentStatus status,
+  }) = _Installment;
+}

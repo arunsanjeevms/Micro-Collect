@@ -1,40 +1,33 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
 import 'installment.dart';
 
-/// ─── Loan Model ──────────────────────────────────────────────────
-class Loan {
-  final String id;
-  final String borrowerId;
-  final String borrowerName;
-  final double principal;
-  final double annualRate;
-  final int tenureMonths;
-  final String frequency; // daily, weekly, monthly
-  final double totalRepayable;
-  final double totalPaid;
-  final int paidInstallments;
-  final int totalInstallments;
-  final DateTime disbursementDate;
-  final DateTime? closedDate;
-  final LoanStatus status;
-  final List<Installment> installments;
+part 'loan.freezed.dart';
 
-  const Loan({
-    required this.id,
-    required this.borrowerId,
-    required this.borrowerName,
-    required this.principal,
-    required this.annualRate,
-    required this.tenureMonths,
-    required this.frequency,
-    required this.totalRepayable,
-    required this.totalPaid,
-    required this.paidInstallments,
-    required this.totalInstallments,
-    required this.disbursementDate,
-    this.closedDate,
-    required this.status,
-    required this.installments,
-  });
+enum LoanStatus { active, closed, overdue, disbursed }
+
+/// ─── Loan Model ──────────────────────────────────────────────────
+@freezed
+abstract class Loan with _$Loan {
+  const Loan._();
+
+  const factory Loan({
+    required String id,
+    required String borrowerId,
+    required String borrowerName,
+    required double principal,
+    required double annualRate,
+    required int tenureMonths,
+    required String frequency, // daily, weekly, monthly
+    required double totalRepayable,
+    required double totalPaid,
+    required int paidInstallments,
+    required int totalInstallments,
+    required DateTime disbursementDate,
+    DateTime? closedDate,
+    required LoanStatus status,
+    required List<Installment> installments,
+  }) = _Loan;
 
   double get outstanding => totalRepayable - totalPaid;
   double get progressPercent =>
@@ -42,5 +35,3 @@ class Loan {
   double get installmentAmount =>
       totalInstallments > 0 ? totalRepayable / totalInstallments : 0;
 }
-
-enum LoanStatus { active, closed, overdue, disbursed }
