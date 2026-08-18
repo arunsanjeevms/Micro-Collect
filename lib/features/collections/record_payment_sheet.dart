@@ -1,27 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
-import '../../core/models/mock_data.dart';
+import '../../core/models/collection_entry.dart';
 import '../../core/utils/avatar_color.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/validators.dart';
+import '../../data/repositories/collection_repository.dart';
+import 'providers/collection_providers.dart';
 
 /// Record Payment Bottom Sheet — amount, mode, notes, confirmation
-class RecordPaymentSheet extends StatefulWidget {
+class RecordPaymentSheet extends ConsumerStatefulWidget {
   final CollectionEntry entry;
 
   const RecordPaymentSheet({super.key, required this.entry});
 
   @override
-  State<RecordPaymentSheet> createState() => _RecordPaymentSheetState();
+  ConsumerState<RecordPaymentSheet> createState() => _RecordPaymentSheetState();
 }
 
-class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
+class _RecordPaymentSheetState extends ConsumerState<RecordPaymentSheet> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _amountController;
   final _notesController = TextEditingController();
-  String _paymentMode = 'cash';
+  PaymentMode _paymentMode = PaymentMode.cash;
   bool _showConfirmation = false;
+  String? _submitError;
 
   @override
   void initState() {
@@ -39,12 +45,41 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
   }
 
   void _handleRecord() {
-    setState(() => _showConfirmation = true);
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() => _showConfirmation = true);
+    }
   }
 
-  void _confirmPayment() {
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
+  Future<void> _confirmPayment() async {
+    final amount = double.parse(_amountController.text.replaceAll(',', ''));
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final receipt = await ref
+        .read(recordPaymentControllerProvider.notifier)
+        .submit(
+          RecordPaymentInput(
+            collectionId: widget.entry.id,
+            amount: amount,
+            mode: _paymentMode,
+            notes: _notesController.text.isEmpty ? null : _notesController.text,
+          ),
+        );
+
+    if (!mounted) return;
+
+    if (receipt == null) {
+      final error = ref.read(recordPaymentControllerProvider).error;
+      setState(
+        () => _submitError = error is Exception
+            ? error.toString().replaceFirst('Exception: ', '')
+            : 'Something went wrong. Please try again.',
+      );
+      return;
+    }
+
+    navigator.pop();
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -54,8 +89,10 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
               size: 20,
             ),
             const SizedBox(width: 8),
-            Text(
-              '${AppFormatters.currency(double.tryParse(_amountController.text) ?? 0)} recorded for ${widget.entry.borrowerName}',
+            Expanded(
+              child: Text(
+                '${receipt.payment.receiptNo}: ${AppFormatters.currency(receipt.payment.amount)} recorded for ${receipt.payment.borrowerName}',
+              ),
             ),
           ],
         ),
@@ -66,6 +103,8 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isSubmitting = ref.watch(recordPaymentControllerProvider).isLoading;
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
@@ -76,166 +115,199 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: _showConfirmation ? _buildConfirmation() : _buildForm(),
+        child: _showConfirmation
+            ? _buildConfirmation(isSubmitting)
+            : _buildForm(),
       ),
     );
   }
 
   Widget _buildForm() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Handle
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
+    final totalDue = widget.entry.totalDue;
+    final hasArrears = widget.entry.previousDue > 0;
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
 
-        // Header
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: avatarColorForId(widget.entry.borrowerId),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  widget.entry.borrowerName
-                      .split(' ')
-                      .map((w) => w[0])
-                      .take(2)
-                      .join(),
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: avatarColorForId(widget.entry.borrowerId),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    widget.entry.borrowerName
+                        .split(' ')
+                        .map((w) => w[0])
+                        .take(2)
+                        .join(),
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.entry.borrowerName, style: AppTypography.titleMd),
-                  Text(
-                    'Due: ${AppFormatters.currency(widget.entry.amountDue)} · Loan ${widget.entry.loanId}',
-                    style: AppTypography.bodySm.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 13,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.entry.borrowerName,
+                      style: AppTypography.titleMd,
                     ),
-                  ),
-                ],
+                    Text(
+                      hasArrears
+                          ? 'Due: ${AppFormatters.currency(totalDue)} (incl. ${AppFormatters.currency(widget.entry.previousDue)} arrears) · Loan ${widget.entry.loanId}'
+                          : 'Due: ${AppFormatters.currency(widget.entry.amountDue)} · Loan ${widget.entry.loanId}',
+                      style: AppTypography.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xl),
-
-        // Amount
-        Text(
-          'Amount',
-          style: AppTypography.labelMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+            ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        TextFormField(
-          controller: _amountController,
-          keyboardType: TextInputType.number,
-          style: AppTypography.financialMd.copyWith(fontSize: 28),
-          decoration: InputDecoration(
-            prefixText: '₹ ',
-            prefixStyle: AppTypography.financialMd.copyWith(
-              fontSize: 28,
+          const SizedBox(height: AppSpacing.xl),
+
+          // Amount
+          Text(
+            'Enter Amount to Collect',
+            style: AppTypography.labelMd.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
-            filled: true,
-            fillColor: AppColors.surfaceContainerLow,
           ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.sm),
+          TextFormField(
+            controller: _amountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: AppTypography.financialMd.copyWith(fontSize: 28),
+            validator: (value) => AppValidators.amount(value, min: 1),
+            decoration: InputDecoration(
+              prefixText: '₹ ',
+              prefixStyle: AppTypography.financialMd.copyWith(
+                fontSize: 28,
+                color: AppColors.onSurfaceVariant,
+              ),
+              filled: true,
+              fillColor: AppColors.surfaceContainerLow,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
 
-        // Payment Mode
-        Text(
-          'Payment Mode',
-          style: AppTypography.labelMd.copyWith(
-            color: AppColors.onSurfaceVariant,
+          // Quick amount chips
+          Row(
+            children: [
+              _QuickAmountChip(
+                label: 'Today\'s Due',
+                onTap: () => _amountController.text = widget.entry.amountDue
+                    .toStringAsFixed(0),
+              ),
+              if (hasArrears) ...[
+                const SizedBox(width: 8),
+                _QuickAmountChip(
+                  label: 'Full Outstanding',
+                  onTap: () =>
+                      _amountController.text = totalDue.toStringAsFixed(0),
+                ),
+              ],
+            ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            _PaymentModeChip(
-              icon: Icons.money,
-              label: 'Cash',
-              isSelected: _paymentMode == 'cash',
-              onTap: () => setState(() => _paymentMode = 'cash'),
-            ),
-            const SizedBox(width: 10),
-            _PaymentModeChip(
-              icon: Icons.qr_code,
-              label: 'UPI',
-              isSelected: _paymentMode == 'upi',
-              onTap: () => setState(() => _paymentMode = 'upi'),
-            ),
-            const SizedBox(width: 10),
-            _PaymentModeChip(
-              icon: Icons.account_balance,
-              label: 'Bank',
-              isSelected: _paymentMode == 'bank',
-              onTap: () => setState(() => _paymentMode = 'bank'),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
 
-        // Notes
-        Text(
-          'Notes (optional)',
-          style: AppTypography.labelMd.copyWith(
-            color: AppColors.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        TextFormField(
-          controller: _notesController,
-          maxLines: 2,
-          decoration: const InputDecoration(hintText: 'Any remarks...'),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-
-        // Submit
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _handleRecord,
-            icon: const Icon(Icons.check_rounded, size: 20),
-            label: const Text('Record Payment'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 52),
+          // Payment Mode
+          Text(
+            'Payment Mode',
+            style: AppTypography.labelMd.copyWith(
+              color: AppColors.onSurfaceVariant,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              _PaymentModeChip(
+                icon: Icons.money,
+                label: 'Cash',
+                isSelected: _paymentMode == PaymentMode.cash,
+                onTap: () => setState(() => _paymentMode = PaymentMode.cash),
+              ),
+              const SizedBox(width: 10),
+              _PaymentModeChip(
+                icon: Icons.qr_code,
+                label: 'UPI',
+                isSelected: _paymentMode == PaymentMode.upi,
+                onTap: () => setState(() => _paymentMode = PaymentMode.upi),
+              ),
+              const SizedBox(width: 10),
+              _PaymentModeChip(
+                icon: Icons.account_balance,
+                label: 'Bank',
+                isSelected: _paymentMode == PaymentMode.bank,
+                onTap: () => setState(() => _paymentMode = PaymentMode.bank),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Notes
+          Text(
+            'Notes (optional)',
+            style: AppTypography.labelMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextFormField(
+            controller: _notesController,
+            maxLines: 2,
+            decoration: const InputDecoration(hintText: 'Any remarks...'),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Submit
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _handleRecord,
+              icon: const Icon(Icons.check_rounded, size: 20),
+              label: const Text('Record Payment'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 52),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildConfirmation() {
-    final amount =
-        double.tryParse(_amountController.text) ?? widget.entry.amountDue;
+  Widget _buildConfirmation(bool isSubmitting) {
+    final amount = double.parse(_amountController.text.replaceAll(',', ''));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -281,10 +353,7 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
           decoration: BoxDecoration(
             color: AppColors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.outlineVariant,
-              style: BorderStyle.solid,
-            ),
+            border: Border.all(color: AppColors.outlineVariant),
           ),
           child: Column(
             children: [
@@ -301,7 +370,8 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
               _ReceiptRow(
                 label: 'Mode',
                 value:
-                    _paymentMode[0].toUpperCase() + _paymentMode.substring(1),
+                    _paymentMode.name[0].toUpperCase() +
+                    _paymentMode.name.substring(1),
               ),
               if (_notesController.text.isNotEmpty) ...[
                 const Divider(height: 20),
@@ -315,6 +385,36 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
             ],
           ),
         ),
+
+        if (_submitError != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.dangerLight,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: AppColors.danger,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _submitError!,
+                    style: AppTypography.bodySm.copyWith(
+                      color: AppColors.danger,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.xl),
 
         // Buttons
@@ -322,7 +422,12 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () => setState(() => _showConfirmation = false),
+                onPressed: isSubmitting
+                    ? null
+                    : () => setState(() {
+                        _showConfirmation = false;
+                        _submitError = null;
+                      }),
                 child: const Text('Edit'),
               ),
             ),
@@ -330,9 +435,22 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: _confirmPayment,
-                icon: const Icon(Icons.check_rounded, size: 20),
-                label: const Text('Confirm'),
+                onPressed: isSubmitting ? null : _confirmPayment,
+                icon: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(AppColors.white),
+                        ),
+                      )
+                    : const Icon(Icons.check_rounded, size: 20),
+                label: Text(
+                  isSubmitting
+                      ? (_submitError != null ? 'Retry' : 'Recording...')
+                      : (_submitError != null ? 'Retry' : 'Confirm'),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                   minimumSize: const Size(double.infinity, 48),
@@ -342,6 +460,38 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
           ],
         ),
       ],
+    );
+  }
+}
+
+// ─── Quick Amount Chip ────────────────────────────────────────────
+class _QuickAmountChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickAmountChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryContainer.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: AppColors.primaryContainer.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.labelMd.copyWith(
+            fontSize: 12,
+            color: AppColors.primaryContainer,
+          ),
+        ),
+      ),
     );
   }
 }

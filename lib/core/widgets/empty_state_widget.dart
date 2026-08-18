@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../constants/app_spacing.dart';
@@ -23,10 +24,13 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
+        // A parent with little vertical space to give (e.g. a list under a
+        // tall summary card, once a filter empties it) would otherwise
+        // overflow a fixed-size Column here instead of just scrolling.
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 80,
@@ -44,9 +48,7 @@ class EmptyStateWidget extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
-              style: AppTypography.titleLg.copyWith(
-                color: AppColors.onSurface,
-              ),
+              style: AppTypography.titleLg.copyWith(color: AppColors.onSurface),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
