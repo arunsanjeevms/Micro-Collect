@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
@@ -39,8 +40,11 @@ class _AddBorrowerScreenState extends State<AddBorrowerScreen> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: AppColors.successLight,
-                  size: 20),
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.successLight,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text('${_nameController.text} added successfully'),
             ],
@@ -55,9 +59,7 @@ class _AddBorrowerScreenState extends State<AddBorrowerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Borrower'),
-      ),
+      appBar: AppBar(title: const Text('Add Borrower')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.marginMobile),
         child: Form(
@@ -201,8 +203,10 @@ class _AddBorrowerScreenState extends State<AddBorrowerScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Village / Town *',
                         hintText: 'Village name',
-                        prefixIcon: Icon(Icons.holiday_village_outlined,
-                            size: 20),
+                        prefixIcon: Icon(
+                          Icons.holiday_village_outlined,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),

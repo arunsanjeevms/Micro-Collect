@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
@@ -13,12 +14,7 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('MicroCollect'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sync),
-            onPressed: () {},
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.sync), onPressed: () {})],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.marginMobile),
@@ -84,7 +80,10 @@ class DashboardScreen extends StatelessWidget {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primaryContainer, width: 4),
+                      border: Border.all(
+                        color: AppColors.primaryContainer,
+                        width: 4,
+                      ),
                     ),
                     child: Center(
                       child: Text(
@@ -94,7 +93,7 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
