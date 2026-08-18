@@ -1,49 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/models/borrower.dart';
+import '../../core/widgets/async_value_view.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/status_badge.dart';
-import '../../core/models/mock_data.dart';
 import '../../core/utils/avatar_color.dart';
+import 'providers/borrower_providers.dart';
 
 /// Borrowers List Screen — searchable, filterable borrower directory
-class BorrowersScreen extends StatefulWidget {
-  final void Function(String borrowerId)? onBorrowerTap;
-
-  const BorrowersScreen({super.key, this.onBorrowerTap});
+class BorrowersScreen extends ConsumerStatefulWidget {
+  const BorrowersScreen({super.key});
 
   @override
-  State<BorrowersScreen> createState() => _BorrowersScreenState();
+  ConsumerState<BorrowersScreen> createState() => _BorrowersScreenState();
 }
 
-class _BorrowersScreenState extends State<BorrowersScreen> {
-  String _searchQuery = '';
-  BorrowerStatus? _filterStatus;
+class _BorrowersScreenState extends ConsumerState<BorrowersScreen> {
+  final _searchController = TextEditingController();
 
-  List<Borrower> get _filteredBorrowers {
-    var list = MockData.borrowers;
-    if (_filterStatus != null) {
-      list = list.where((b) => b.status == _filterStatus).toList();
-    }
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      list = list
-          .where(
-            (b) =>
-                b.name.toLowerCase().contains(q) ||
-                b.village.toLowerCase().contains(q) ||
-                b.mobile.contains(q),
-          )
-          .toList();
-    }
-    return list;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    ref.read(borrowerQueryProvider.notifier).setSearch('');
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredBorrowers;
+    final filtered = ref.watch(filteredBorrowersProvider);
+    final counts = ref.watch(borrowerStatusCountsProvider).value;
+    final query = ref.watch(borrowerQueryProvider);
+    final queryNotifier = ref.read(borrowerQueryProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -63,14 +59,15 @@ class _BorrowersScreenState extends State<BorrowersScreen> {
               AppSpacing.sm,
             ),
             child: TextField(
-              onChanged: (v) => setState(() => _searchQuery = v),
+              controller: _searchController,
+              onChanged: queryNotifier.setSearch,
               decoration: InputDecoration(
                 hintText: 'Search by name, village, or phone...',
                 prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
+                suffixIcon: query.search.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () => setState(() => _searchQuery = ''),
+                        onPressed: _clearSearch,
                       )
                     : null,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -89,41 +86,32 @@ class _BorrowersScreenState extends State<BorrowersScreen> {
               children: [
                 _FilterChip(
                   label: 'All',
-                  count: MockData.borrowers.length,
-                  isSelected: _filterStatus == null,
-                  onTap: () => setState(() => _filterStatus = null),
+                  count: counts?.values.fold<int>(0, (a, b) => a + b) ?? 0,
+                  isSelected: query.status == null,
+                  onTap: () => queryNotifier.setStatus(null),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _FilterChip(
                   label: 'Active',
-                  count: MockData.borrowers
-                      .where((b) => b.status == BorrowerStatus.active)
-                      .length,
-                  isSelected: _filterStatus == BorrowerStatus.active,
-                  onTap: () =>
-                      setState(() => _filterStatus = BorrowerStatus.active),
+                  count: counts?[BorrowerStatus.active] ?? 0,
+                  isSelected: query.status == BorrowerStatus.active,
+                  onTap: () => queryNotifier.setStatus(BorrowerStatus.active),
                   color: AppColors.success,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _FilterChip(
                   label: 'Overdue',
-                  count: MockData.borrowers
-                      .where((b) => b.status == BorrowerStatus.overdue)
-                      .length,
-                  isSelected: _filterStatus == BorrowerStatus.overdue,
-                  onTap: () =>
-                      setState(() => _filterStatus = BorrowerStatus.overdue),
+                  count: counts?[BorrowerStatus.overdue] ?? 0,
+                  isSelected: query.status == BorrowerStatus.overdue,
+                  onTap: () => queryNotifier.setStatus(BorrowerStatus.overdue),
                   color: AppColors.danger,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _FilterChip(
                   label: 'Closed',
-                  count: MockData.borrowers
-                      .where((b) => b.status == BorrowerStatus.closed)
-                      .length,
-                  isSelected: _filterStatus == BorrowerStatus.closed,
-                  onTap: () =>
-                      setState(() => _filterStatus = BorrowerStatus.closed),
+                  count: counts?[BorrowerStatus.closed] ?? 0,
+                  isSelected: query.status == BorrowerStatus.closed,
+                  onTap: () => queryNotifier.setStatus(BorrowerStatus.closed),
                   color: AppColors.onSurfaceVariant,
                 ),
               ],
@@ -139,7 +127,11 @@ class _BorrowersScreenState extends State<BorrowersScreen> {
             child: Row(
               children: [
                 Text(
-                  '${filtered.length} borrower${filtered.length != 1 ? 's' : ''}',
+                  filtered.maybeWhen(
+                    data: (list) =>
+                        '${list.length} borrower${list.length != 1 ? 's' : ''}',
+                    orElse: () => ' ',
+                  ),
                   style: AppTypography.labelMd.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -151,44 +143,38 @@ class _BorrowersScreenState extends State<BorrowersScreen> {
 
           // Borrower list
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.person_search_rounded,
-                          size: 64,
-                          color: AppColors.onSurfaceVariant.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'No borrowers found',
-                          style: AppTypography.titleMd.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.marginMobile,
-                      vertical: AppSpacing.xs,
-                    ),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      return _BorrowerListItem(
-                        borrower: filtered[index],
-                        onTap: () =>
-                            widget.onBorrowerTap?.call(filtered[index].id),
-                      );
-                    },
-                  ),
+            child: AsyncValueView<List<Borrower>>(
+              value: filtered,
+              isEmpty: (list) => list.isEmpty,
+              empty: EmptyStateWidget(
+                icon: Icons.person_search_rounded,
+                title: query.isDefault ? 'No borrowers yet' : 'No matches',
+                description: query.isDefault
+                    ? 'Register your first borrower to get started.'
+                    : 'Try a different name, village, or phone number.',
+                actionLabel: query.isDefault ? 'Add borrower' : null,
+                onAction: query.isDefault
+                    ? () => context.push('/borrowers/add')
+                    : null,
+              ),
+              onRetry: () => ref.invalidate(borrowersProvider),
+              data: (list) => ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.marginMobile,
+                  vertical: AppSpacing.xs,
+                ),
+                itemCount: list.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (context, index) {
+                  final borrower = list[index];
+                  return _BorrowerListItem(
+                    borrower: borrower,
+                    onTap: () => context.push('/borrowers/${borrower.id}'),
+                  );
+                },
+              ),
+            ),
           ),
         ],
       ),

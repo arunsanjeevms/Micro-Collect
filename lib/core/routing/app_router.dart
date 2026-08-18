@@ -39,11 +39,8 @@ GoRouter appRouter(Ref ref) {
           ),
           GoRoute(
             path: '/borrowers',
-            pageBuilder: (context, state) => NoTransitionPage(
-              child: BorrowersScreen(
-                onBorrowerTap: (id) => context.push('/borrowers/$id'),
-              ),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: BorrowersScreen()),
           ),
           GoRoute(
             path: '/collections',

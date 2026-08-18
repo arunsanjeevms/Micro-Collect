@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:microcollect/app.dart';
+import 'support/test_app.dart';
 
 void main() {
   testWidgets('app boots to the dashboard with bottom navigation', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MicroCollectApp()));
+    await tester.pumpWidget(appUnderTest());
     await tester.pumpAndSettle();
 
     expect(find.text('MicroCollect'), findsOneWidget);
@@ -21,7 +20,7 @@ void main() {
   testWidgets('tapping a bottom nav tab navigates to that screen', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: MicroCollectApp()));
+    await tester.pumpWidget(appUnderTest());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Borrowers'));
@@ -37,7 +36,7 @@ void main() {
       // Regression test: "/borrowers/:id" was declared before "/borrowers/add"
       // in the route table, so go_router matched "/borrowers/add" as a detail
       // route with id "add" and threw looking up a borrower with that id.
-      await tester.pumpWidget(const ProviderScope(child: MicroCollectApp()));
+      await tester.pumpWidget(appUnderTest());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Borrowers'));
@@ -55,7 +54,7 @@ void main() {
   testWidgets(
     'tapping a loan card on a borrower profile opens that loan\'s detail page',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const ProviderScope(child: MicroCollectApp()));
+      await tester.pumpWidget(appUnderTest());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Borrowers'));
