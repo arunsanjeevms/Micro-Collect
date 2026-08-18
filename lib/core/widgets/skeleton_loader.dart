@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../constants/app_spacing.dart';
 import '../theme/app_colors.dart';
 
 /// Shimmer-style skeleton loading widget
@@ -30,9 +32,10 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    _animation = Tween<double>(begin: -2, end: 2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: -2,
+      end: 2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -97,6 +100,27 @@ class SkeletonCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A list's worth of SkeletonListItem, padded to match the ListView it
+/// stands in for so the transition from loading to loaded doesn't jump.
+class ListSkeleton extends StatelessWidget {
+  final int itemCount;
+
+  const ListSkeleton({super.key, this.itemCount = 6});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.marginMobile,
+        vertical: AppSpacing.xs,
+      ),
+      itemCount: itemCount,
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (_, _) => const SkeletonListItem(),
     );
   }
 }
