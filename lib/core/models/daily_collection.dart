@@ -1,14 +1,17 @@
-/// ─── Report Data ────────────────────────────────────────────────
-class DailyCollection {
-  final DateTime date;
-  final double collected;
-  final double due;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const DailyCollection({
-    required this.date,
-    required this.collected,
-    required this.due,
-  });
+part 'daily_collection.freezed.dart';
+
+/// ─── Report Data ────────────────────────────────────────────────
+@freezed
+abstract class DailyCollection with _$DailyCollection {
+  const DailyCollection._();
+
+  const factory DailyCollection({
+    required DateTime date,
+    required double collected,
+    required double due,
+  }) = _DailyCollection;
 
   double get efficiency => due > 0 ? (collected / due) * 100 : 100;
 }
