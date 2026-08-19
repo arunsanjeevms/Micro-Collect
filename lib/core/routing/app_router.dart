@@ -10,6 +10,7 @@ import '../../features/loans/loan_detail_screen.dart';
 import '../../features/loans/create_loan_screen.dart';
 import '../../features/loans/borrower_loans_screen.dart';
 import '../../features/loans/loan_created_screen.dart';
+import '../../features/loans/loan_closure_screen.dart';
 import '../../core/models/loan.dart';
 import '../../features/collections/collections_screen.dart';
 import '../../features/collections/payment_success_screen.dart';
@@ -100,6 +101,12 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             LoanDetailScreen(loanId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/loans/:id/close',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            LoanClosureScreen(loanId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/payments/success',

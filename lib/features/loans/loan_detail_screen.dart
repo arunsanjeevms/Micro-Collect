@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -26,10 +27,26 @@ class LoanDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('Loan ${loanAsync.value?.id ?? loanId}'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded),
-            onPressed: () {},
-          ),
+          if (loanAsync.value != null &&
+              loanAsync.value!.status != LoanStatus.closed)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (value) {
+                if (value == 'close') context.push('/loans/$loanId/close');
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'close',
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle_outline_rounded, size: 18),
+                      SizedBox(width: 8),
+                      Text('Close Loan'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
       body: AsyncValueView<Loan>(
