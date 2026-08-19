@@ -8,6 +8,7 @@ import '../../features/borrowers/borrower_detail_screen.dart';
 import '../../features/borrowers/add_borrower_screen.dart';
 import '../../features/loans/loan_detail_screen.dart';
 import '../../features/loans/create_loan_screen.dart';
+import '../../features/loans/borrower_loans_screen.dart';
 import '../../features/collections/collections_screen.dart';
 import '../../features/reports/reports_screen.dart';
 import '../widgets/app_bottom_nav.dart';
@@ -69,6 +70,12 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             BorrowerDetailScreen(borrowerId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/borrowers/:id/loans',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            BorrowerLoansScreen(borrowerId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/loans/create',
