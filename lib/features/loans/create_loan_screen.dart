@@ -123,23 +123,7 @@ class _CreateLoanFormState extends ConsumerState<_CreateLoanForm> {
     }
     if (loan == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle,
-              color: AppColors.successLight,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text('Loan of ${AppFormatters.currency(_principal)} created'),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    context.pop();
+    context.pushReplacement('/loans/created', extra: loan);
   }
 
   @override
