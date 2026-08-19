@@ -19,6 +19,16 @@ import '../../features/collections/payment_receipt_screen.dart';
 import '../../features/reports/reports_screen.dart';
 import '../../features/reports/daily_collection_report_screen.dart';
 import '../../features/reports/analytics_dashboard_screen.dart';
+import '../../features/more/more_screen.dart';
+import '../../features/more/employee_list_screen.dart';
+import '../../features/more/area_list_screen.dart';
+import '../../features/more/roles_permissions_screen.dart';
+import '../../features/more/loan_schemes_screen.dart';
+import '../../features/more/settings_screen.dart';
+import '../../features/more/company_profile_screen.dart';
+import '../../features/more/printer_settings_screen.dart';
+import '../../features/more/user_security_screen.dart';
+import '../../features/more/sync_center_screen.dart';
 import '../../data/repositories/collection_repository.dart';
 import '../widgets/app_bottom_nav.dart';
 
@@ -61,6 +71,11 @@ GoRouter appRouter(Ref ref) {
             path: '/reports',
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: ReportsScreen()),
+          ),
+          GoRoute(
+            path: '/more',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: MoreScreen()),
           ),
         ],
       ),
@@ -139,6 +154,51 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const AnalyticsDashboardScreen(),
       ),
+      GoRoute(
+        path: '/more/employees',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const EmployeeListScreen(),
+      ),
+      GoRoute(
+        path: '/more/areas',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AreaListScreen(),
+      ),
+      GoRoute(
+        path: '/more/roles',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RolesPermissionsScreen(),
+      ),
+      GoRoute(
+        path: '/more/loan-schemes',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const LoanSchemesScreen(),
+      ),
+      GoRoute(
+        path: '/more/settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/more/company-profile',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CompanyProfileScreen(),
+      ),
+      GoRoute(
+        path: '/more/printer-settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const PrinterSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/more/security',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const UserSecurityScreen(),
+      ),
+      GoRoute(
+        path: '/more/sync',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SyncCenterScreen(),
+      ),
     ],
   );
 }
@@ -149,7 +209,13 @@ class _AppShell extends StatelessWidget {
 
   const _AppShell({required this.child});
 
-  static const _paths = ['/', '/borrowers', '/collections', '/reports'];
+  static const _paths = [
+    '/',
+    '/borrowers',
+    '/collections',
+    '/reports',
+    '/more',
+  ];
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;

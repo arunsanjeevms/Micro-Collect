@@ -47,7 +47,12 @@ class DashboardScreen extends StatelessWidget {
             const Text('MicroCollect'),
           ],
         ),
-        actions: [IconButton(icon: const Icon(Icons.sync), onPressed: () {})],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () => context.push('/more/sync'),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.marginMobile),

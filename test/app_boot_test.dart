@@ -15,6 +15,31 @@ void main() {
     expect(find.text('Borrowers'), findsOneWidget);
     expect(find.text('Collect'), findsOneWidget);
     expect(find.text('Reports'), findsOneWidget);
+    expect(find.text('More'), findsOneWidget);
+  });
+
+  testWidgets('the More tab opens the admin/settings hub and its sub-screens', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(appUnderTest());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Employees'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Company Profile'), findsOneWidget);
+    expect(find.text('Printer Settings'), findsOneWidget);
+
+    await tester.tap(find.text('Company Profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rural Microfinance'), findsOneWidget);
   });
 
   testWidgets('tapping a bottom nav tab navigates to that screen', (

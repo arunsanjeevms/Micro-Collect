@@ -55,6 +55,12 @@ class AppBottomNav extends StatelessWidget {
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
+              _NavItem(
+                icon: Icons.more_horiz_rounded,
+                label: 'More',
+                isActive: currentIndex == 4,
+                onTap: () => onTap(4),
+              ),
             ],
           ),
         ),
