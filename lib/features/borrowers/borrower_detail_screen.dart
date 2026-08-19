@@ -186,11 +186,20 @@ class _BorrowerDetailBody extends ConsumerWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () =>
-                      context.push('/loans/create?borrowerId=$borrowerId'),
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('New Loan'),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () =>
+                          context.push('/borrowers/$borrowerId/loans'),
+                      child: const Text('View All'),
+                    ),
+                    TextButton.icon(
+                      onPressed: () =>
+                          context.push('/loans/create?borrowerId=$borrowerId'),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text('New Loan'),
+                    ),
+                  ],
                 ),
               ],
             ),
