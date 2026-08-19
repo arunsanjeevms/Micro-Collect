@@ -1,39 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
-import '../../core/widgets/empty_state_widget.dart';
+import '../../core/widgets/async_value_view.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/status_badge.dart';
-import '../../core/models/mock_data.dart';
+import '../../core/models/loan.dart';
+import '../../core/models/installment.dart';
 import '../../core/utils/formatters.dart';
+import 'providers/loan_providers.dart';
 
 /// Loan Detail Screen — full loan overview with installment schedule
-class LoanDetailScreen extends StatelessWidget {
+class LoanDetailScreen extends ConsumerWidget {
   final String loanId;
 
   const LoanDetailScreen({super.key, required this.loanId});
 
   @override
-  Widget build(BuildContext context) {
-    final matches = MockData.loans.where((l) => l.id == loanId);
-    if (matches.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Loan')),
-        body: EmptyStateWidget(
-          icon: Icons.receipt_long_outlined,
-          title: 'Loan not found',
-          description:
-              'This loan may have been removed or the link is invalid.',
-        ),
-      );
-    }
-    final loan = matches.first;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loanAsync = ref.watch(loanByIdProvider(loanId));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Loan ${loan.id}'),
+        title: Text('Loan ${loanAsync.value?.id ?? loanId}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert_rounded),
@@ -41,262 +32,19 @@ class LoanDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.marginMobile),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ─── Loan Overview Card ──────────────────────────────
-            GlassCard(
-              color: AppColors.primaryFixed,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        loan.borrowerName,
-                        style: AppTypography.titleMd.copyWith(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      StatusBadge(status: _loanStatusType(loan.status)),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    AppFormatters.currency(loan.principal),
-                    style: AppTypography.financialLg.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Principal Amount',
-                    style: AppTypography.bodySm.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Loan terms row
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        _TermItem(label: 'Rate', value: '${loan.annualRate}%'),
-                        _TermDivider(),
-                        _TermItem(
-                          label: 'Tenure',
-                          value: '${loan.tenureMonths}mo',
-                        ),
-                        _TermDivider(),
-                        _TermItem(
-                          label: 'Frequency',
-                          value:
-                              loan.frequency[0].toUpperCase() +
-                              loan.frequency.substring(1),
-                        ),
-                        _TermDivider(),
-                        _TermItem(
-                          label: 'EMI',
-                          value: AppFormatters.currency(loan.installmentAmount),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // ─── Repayment Progress ──────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Repayment Progress',
-                        style: AppTypography.titleMd.copyWith(fontSize: 15),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${loan.progressPercent.toStringAsFixed(0)}%',
-                          style: AppTypography.labelMd.copyWith(
-                            color: AppColors.success,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Progress bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: loan.progressPercent / 100,
-                      minHeight: 10,
-                      backgroundColor: AppColors.surfaceContainer,
-                      valueColor: AlwaysStoppedAnimation(
-                        loan.status == LoanStatus.overdue
-                            ? AppColors.danger
-                            : AppColors.success,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Amount details
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _AmountDetail(
-                          label: 'Total Repayable',
-                          value: AppFormatters.currency(loan.totalRepayable),
-                          color: AppColors.onSurface,
-                        ),
-                      ),
-                      Expanded(
-                        child: _AmountDetail(
-                          label: 'Paid',
-                          value: AppFormatters.currency(loan.totalPaid),
-                          color: AppColors.success,
-                        ),
-                      ),
-                      Expanded(
-                        child: _AmountDetail(
-                          label: 'Outstanding',
-                          value: AppFormatters.currency(loan.outstanding),
-                          color: AppColors.danger,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // ─── Key Dates ───────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Column(
-                children: [
-                  _DateRow(
-                    icon: Icons.play_circle_outline_rounded,
-                    label: 'Disbursement',
-                    date: AppFormatters.date(loan.disbursementDate),
-                    color: AppColors.info,
-                  ),
-                  const Divider(height: 24),
-                  _DateRow(
-                    icon: Icons.flag_outlined,
-                    label: 'Maturity',
-                    date: AppFormatters.date(
-                      DateTime(
-                        loan.disbursementDate.year,
-                        loan.disbursementDate.month + loan.tenureMonths,
-                        loan.disbursementDate.day,
-                      ),
-                    ),
-                    color: AppColors.warning,
-                  ),
-                  if (loan.closedDate != null) ...[
-                    const Divider(height: 24),
-                    _DateRow(
-                      icon: Icons.check_circle_outline_rounded,
-                      label: 'Closed',
-                      date: AppFormatters.date(loan.closedDate!),
-                      color: AppColors.success,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // ─── Installment Schedule ────────────────────────────
-            Text(
-              'INSTALLMENT SCHEDULE',
-              style: AppTypography.labelSm.copyWith(
-                color: AppColors.onSurfaceVariant,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            if (loan.installments.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.receipt_long_outlined,
-                        size: 40,
-                        color: AppColors.onSurfaceVariant.withValues(
-                          alpha: 0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Schedule not available',
-                        style: AppTypography.bodyMd.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              ...loan.installments.map(
-                (inst) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _InstallmentRow(installment: inst),
-                ),
-              ),
-
-            const SizedBox(height: AppSpacing.xxl),
-          ],
-        ),
+      body: AsyncValueView<Loan>(
+        value: loanAsync,
+        onRetry: () => ref.invalidate(loanByIdProvider(loanId)),
+        data: (loan) => _LoanDetailBody(loan: loan),
       ),
     );
   }
+}
+
+class _LoanDetailBody extends StatelessWidget {
+  final Loan loan;
+
+  const _LoanDetailBody({required this.loan});
 
   StatusType _loanStatusType(LoanStatus status) {
     switch (status) {
@@ -309,6 +57,279 @@ class LoanDetailScreen extends StatelessWidget {
       case LoanStatus.disbursed:
         return StatusType.disbursed;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(AppSpacing.marginMobile),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // ─── Loan Overview Card ──────────────────────────────
+              GlassCard(
+                color: AppColors.primaryFixed,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          loan.borrowerName,
+                          style: AppTypography.titleMd.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        StatusBadge(status: _loanStatusType(loan.status)),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      AppFormatters.currency(loan.principal),
+                      style: AppTypography.financialLg.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Principal Amount',
+                      style: AppTypography.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Loan terms row
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          _TermItem(
+                            label: 'Rate',
+                            value: '${loan.annualRate}%',
+                          ),
+                          _TermDivider(),
+                          _TermItem(
+                            label: 'Tenure',
+                            value: '${loan.tenureMonths}mo',
+                          ),
+                          _TermDivider(),
+                          _TermItem(
+                            label: 'Frequency',
+                            value:
+                                loan.frequency[0].toUpperCase() +
+                                loan.frequency.substring(1),
+                          ),
+                          _TermDivider(),
+                          _TermItem(
+                            label: 'EMI',
+                            value: AppFormatters.currency(
+                              loan.installmentAmount,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // ─── Repayment Progress ──────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Repayment Progress',
+                          style: AppTypography.titleMd.copyWith(fontSize: 15),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${loan.progressPercent.toStringAsFixed(0)}%',
+                            style: AppTypography.labelMd.copyWith(
+                              color: AppColors.success,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: loan.progressPercent / 100,
+                        minHeight: 10,
+                        backgroundColor: AppColors.surfaceContainer,
+                        valueColor: AlwaysStoppedAnimation(
+                          loan.status == LoanStatus.overdue
+                              ? AppColors.danger
+                              : AppColors.success,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Amount details
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _AmountDetail(
+                            label: 'Total Repayable',
+                            value: AppFormatters.currency(loan.totalRepayable),
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                        Expanded(
+                          child: _AmountDetail(
+                            label: 'Paid',
+                            value: AppFormatters.currency(loan.totalPaid),
+                            color: AppColors.success,
+                          ),
+                        ),
+                        Expanded(
+                          child: _AmountDetail(
+                            label: 'Outstanding',
+                            value: AppFormatters.currency(loan.outstanding),
+                            color: AppColors.danger,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // ─── Key Dates ───────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  children: [
+                    _DateRow(
+                      icon: Icons.play_circle_outline_rounded,
+                      label: 'Disbursement',
+                      date: AppFormatters.date(loan.disbursementDate),
+                      color: AppColors.info,
+                    ),
+                    const Divider(height: 24),
+                    _DateRow(
+                      icon: Icons.flag_outlined,
+                      label: 'Maturity',
+                      date: AppFormatters.date(
+                        DateTime(
+                          loan.disbursementDate.year,
+                          loan.disbursementDate.month + loan.tenureMonths,
+                          loan.disbursementDate.day,
+                        ),
+                      ),
+                      color: AppColors.warning,
+                    ),
+                    if (loan.closedDate != null) ...[
+                      const Divider(height: 24),
+                      _DateRow(
+                        icon: Icons.check_circle_outline_rounded,
+                        label: 'Closed',
+                        date: AppFormatters.date(loan.closedDate!),
+                        color: AppColors.success,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // ─── Installment Schedule ────────────────────────────
+              Text(
+                'INSTALLMENT SCHEDULE',
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              if (loan.installments.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 40,
+                          color: AppColors.onSurfaceVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Schedule not available',
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.xxl),
+            ]),
+          ),
+        ),
+        // A daily loan can generate hundreds of installments - build the
+        // schedule as a lazy sliver instead of eagerly inflating one Column.
+        if (loan.installments.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.marginMobile,
+            ),
+            sliver: SliverList.separated(
+              itemCount: loan.installments.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) =>
+                  _InstallmentRow(installment: loan.installments[index]),
+            ),
+          ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: AppSpacing.xxl)),
+      ],
+    );
   }
 }
 
