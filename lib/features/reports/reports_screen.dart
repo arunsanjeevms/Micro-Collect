@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -37,7 +38,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.download_rounded, size: 22),
-            onPressed: () {},
+            tooltip: 'Daily Collection Report',
+            onPressed: () => context.push('/reports/daily'),
           ),
         ],
       ),
