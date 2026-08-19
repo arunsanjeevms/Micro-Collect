@@ -18,6 +18,7 @@ import '../../features/collections/payment_success_screen.dart';
 import '../../features/collections/payment_receipt_screen.dart';
 import '../../features/reports/reports_screen.dart';
 import '../../features/reports/daily_collection_report_screen.dart';
+import '../../features/reports/analytics_dashboard_screen.dart';
 import '../../data/repositories/collection_repository.dart';
 import '../widgets/app_bottom_nav.dart';
 
@@ -132,6 +133,11 @@ GoRouter appRouter(Ref ref) {
         path: '/reports/daily',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const DailyCollectionReportScreen(),
+      ),
+      GoRoute(
+        path: '/reports/analytics',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AnalyticsDashboardScreen(),
       ),
     ],
   );

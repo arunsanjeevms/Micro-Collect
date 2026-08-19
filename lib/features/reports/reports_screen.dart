@@ -37,6 +37,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('Reports'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.insights_rounded, size: 22),
+            tooltip: 'Analytics Overview',
+            onPressed: () => context.push('/reports/analytics'),
+          ),
+          IconButton(
             icon: const Icon(Icons.download_rounded, size: 22),
             tooltip: 'Daily Collection Report',
             onPressed: () => context.push('/reports/daily'),
@@ -490,11 +495,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
             const SizedBox(height: AppSpacing.md),
             StatCard(
               label: 'Total Disbursed',
-              value: AppFormatters.currency(108000),
+              value: AppFormatters.currency(
+                MockData.loans.fold<double>(0, (sum, l) => sum + l.principal),
+              ),
               icon: Icons.account_balance_wallet_rounded,
               accentColor: AppColors.primary,
-              trend: '+12% vs last month',
-              isTrendPositive: true,
             ),
             const SizedBox(height: AppSpacing.sm),
             StatCard(
