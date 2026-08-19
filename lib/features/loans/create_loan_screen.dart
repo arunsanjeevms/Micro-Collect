@@ -1,25 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
-import '../../core/widgets/empty_state_widget.dart';
+import '../../core/widgets/async_value_view.dart';
 import '../../core/widgets/glass_card.dart';
-import '../../core/models/mock_data.dart';
+import '../../core/models/borrower.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/loan_calculator.dart';
+import '../borrowers/providers/borrower_providers.dart';
+import '../../data/repositories/loan_repository.dart';
+import 'providers/loan_providers.dart';
 
 /// Create Loan Screen — form with live EMI preview
-class CreateLoanScreen extends StatefulWidget {
+class CreateLoanScreen extends ConsumerWidget {
   final String borrowerId;
 
   const CreateLoanScreen({super.key, required this.borrowerId});
 
   @override
-  State<CreateLoanScreen> createState() => _CreateLoanScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final borrowerAsync = ref.watch(borrowerByIdProvider(borrowerId));
+
+    return Scaffold(
+      appBar: borrowerAsync.value == null
+          ? AppBar(title: const Text('New Loan'))
+          : null,
+      body: AsyncValueView<Borrower>(
+        value: borrowerAsync,
+        onRetry: () => ref.invalidate(borrowerByIdProvider(borrowerId)),
+        data: (borrower) => _CreateLoanForm(borrower: borrower),
+      ),
+    );
+  }
 }
 
-class _CreateLoanScreenState extends State<CreateLoanScreen> {
+class _CreateLoanForm extends ConsumerStatefulWidget {
+  final Borrower borrower;
+
+  const _CreateLoanForm({required this.borrower});
+
+  @override
+  ConsumerState<_CreateLoanForm> createState() => _CreateLoanFormState();
+}
+
+class _CreateLoanFormState extends ConsumerState<_CreateLoanForm> {
   final _formKey = GlobalKey<FormState>();
   final _principalController = TextEditingController(text: '20000');
   final _rateController = TextEditingController(text: '24');
@@ -67,44 +94,60 @@ class _CreateLoanScreenState extends State<CreateLoanScreen> {
     super.dispose();
   }
 
-  void _handleSubmit() {
-    if (_formKey.currentState?.validate() ?? false) {
+  Future<void> _handleSubmit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final loan = await ref
+        .read(createLoanControllerProvider.notifier)
+        .submit(
+          LoanDraft(
+            borrowerId: widget.borrower.id,
+            principal: _principal,
+            annualRate: _rate,
+            tenureMonths: _tenure,
+            frequency: _frequency,
+            advanceInstallments: _advanceInstallments,
+          ),
+        );
+    if (!mounted) return;
+
+    final error = ref.read(createLoanControllerProvider).error;
+    if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.successLight,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text('Loan of ${AppFormatters.currency(_principal)} created'),
-            ],
-          ),
-          backgroundColor: AppColors.success,
+          content: Text('Could not create loan: $error'),
+          backgroundColor: AppColors.danger,
         ),
       );
-      Navigator.of(context).pop();
+      return;
     }
+    if (loan == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: AppColors.successLight,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text('Loan of ${AppFormatters.currency(_principal)} created'),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+      ),
+    );
+    context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final borrowerMatches = MockData.borrowers.where(
-      (b) => b.id == widget.borrowerId,
+    final borrower = widget.borrower;
+    final isSubmitting = ref.watch(
+      createLoanControllerProvider.select((s) => s.isLoading),
     );
-    if (borrowerMatches.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('New Loan')),
-        body: EmptyStateWidget(
-          icon: Icons.person_off_outlined,
-          title: 'Borrower not found',
-          description: 'Open this screen from a borrower\'s profile.',
-        ),
-      );
-    }
-    final borrower = borrowerMatches.first;
 
     return Scaffold(
       appBar: AppBar(
@@ -418,9 +461,18 @@ class _CreateLoanScreenState extends State<CreateLoanScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _handleSubmit,
-                  icon: const Icon(Icons.check_rounded, size: 20),
-                  label: const Text('Create Loan'),
+                  onPressed: isSubmitting ? null : _handleSubmit,
+                  icon: isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_rounded, size: 20),
+                  label: Text(isSubmitting ? 'Creating...' : 'Create Loan'),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 52),
                   ),
