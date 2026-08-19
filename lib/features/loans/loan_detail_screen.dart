@@ -27,24 +27,39 @@ class LoanDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('Loan ${loanAsync.value?.id ?? loanId}'),
         actions: [
-          if (loanAsync.value != null &&
-              loanAsync.value!.status != LoanStatus.closed)
+          if (loanAsync.value != null)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded),
               onSelected: (value) {
-                if (value == 'close') context.push('/loans/$loanId/close');
+                switch (value) {
+                  case 'close':
+                    context.push('/loans/$loanId/close');
+                  case 'statement':
+                    context.push('/loans/$loanId/statement');
+                }
               },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'close',
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'statement',
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle_outline_rounded, size: 18),
+                      Icon(Icons.receipt_long_outlined, size: 18),
                       SizedBox(width: 8),
-                      Text('Close Loan'),
+                      Text('View Statement'),
                     ],
                   ),
                 ),
+                if (loanAsync.value!.status != LoanStatus.closed)
+                  const PopupMenuItem(
+                    value: 'close',
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Close Loan'),
+                      ],
+                    ),
+                  ),
               ],
             ),
         ],
