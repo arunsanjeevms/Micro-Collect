@@ -256,6 +256,82 @@ class MockDatabase implements ChangeFeed {
     );
   }
 
+  /// Settles the rest of a loan's schedule in one payment (used by the
+  /// Loan Closure screen for a lump-sum payoff outside the normal daily
+  /// collection cycle - the loan's outstanding always equals the sum of
+  /// its remaining installment amounts, so the allocator clears every
+  /// installment exactly with nothing left partial).
+  PaymentReceipt closeLoan(
+    String loanId, {
+    required PaymentMode mode,
+    String? notes,
+  }) {
+    final loan = _loans[loanId];
+    if (loan == null) {
+      throw NotFoundException('Loan', loanId);
+    }
+    if (loan.status == LoanStatus.closed) {
+      throw const ValidationException('This loan is already closed');
+    }
+
+    final now = DateTime.now();
+    final amount = loan.outstanding;
+
+    final allocation = PaymentAllocator.allocate(
+      installments: loan.installments,
+      amount: amount,
+      asOf: now,
+    );
+
+    final updatedLoan = loan.copyWith(
+      installments: allocation.updatedInstallments,
+      totalPaid: loan.totalRepayable,
+      paidInstallments: loan.totalInstallments,
+      status: LoanStatus.closed,
+      closedDate: now,
+    );
+    _loans[loan.id] = updatedLoan;
+
+    final paymentId = _nextId('P', _payments.keys);
+    final payment = Payment(
+      id: paymentId,
+      receiptNo: 'RCP-${paymentId.substring(1)}',
+      borrowerId: loan.borrowerId,
+      borrowerName: loan.borrowerName,
+      loanId: loan.id,
+      installmentIds: allocation.touchedInstallmentIds,
+      amount: amount,
+      mode: mode,
+      notes: notes,
+      paidAt: now,
+    );
+    _payments[paymentId] = payment;
+
+    _recomputeBorrower(loan.borrowerId);
+
+    _emit(
+      const DataChange({
+        EntityKind.loan,
+        EntityKind.installment,
+        EntityKind.borrower,
+        EntityKind.payment,
+        EntityKind.report,
+      }),
+    );
+
+    final touchedNumbers = allocation.updatedInstallments
+        .where((i) => allocation.touchedInstallmentIds.contains(i.id))
+        .map((i) => i.number)
+        .toList();
+
+    return PaymentReceipt(
+      payment: payment,
+      touchedInstallmentNumbers: touchedNumbers,
+      newLoanOutstanding: updatedLoan.outstanding,
+      newBorrowerOutstanding: _borrowers[loan.borrowerId]!.totalOutstanding,
+    );
+  }
+
   void loadDemo() {
     _borrowers
       ..clear()

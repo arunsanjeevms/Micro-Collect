@@ -1,4 +1,6 @@
+import '../../core/models/collection_entry.dart' show PaymentMode;
 import '../../core/models/loan.dart';
+import '../repositories/collection_repository.dart' show PaymentReceipt;
 import '../dev/mock_op.dart';
 import '../repositories/loan_repository.dart';
 import 'mock_database.dart';
@@ -11,7 +13,8 @@ class MockLoanRepository implements LoanRepository {
   final MockGateway _gateway;
 
   @override
-  Future<List<Loan>> fetchAll() => _gateway.call(MockOp.read, () => _db.loans());
+  Future<List<Loan>> fetchAll() =>
+      _gateway.call(MockOp.read, () => _db.loans());
 
   @override
   Future<Loan?> findById(String id) =>
@@ -24,4 +27,14 @@ class MockLoanRepository implements LoanRepository {
   @override
   Future<Loan> create(LoanDraft draft) =>
       _gateway.call(MockOp.write, () => _db.insertLoan(draft));
+
+  @override
+  Future<PaymentReceipt> closeLoan(
+    String loanId, {
+    required PaymentMode mode,
+    String? notes,
+  }) => _gateway.call(
+    MockOp.write,
+    () => _db.closeLoan(loanId, mode: mode, notes: notes),
+  );
 }

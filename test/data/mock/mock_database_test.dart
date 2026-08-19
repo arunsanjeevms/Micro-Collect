@@ -438,6 +438,76 @@ void main() {
     );
   });
 
+  group('MockDatabase.closeLoan', () {
+    late MockDatabase db;
+
+    setUp(() => db = MockDatabase());
+    tearDown(() => db.dispose());
+
+    test('rejects an unknown loan', () {
+      expect(
+        () => db.closeLoan('L999', mode: PaymentMode.cash),
+        throwsA(isA<NotFoundException>()),
+      );
+    });
+
+    test('rejects a loan that is already closed', () {
+      expect(
+        () => db.closeLoan('L005', mode: PaymentMode.cash), // seeded closed
+        throwsA(isA<ValidationException>()),
+      );
+    });
+
+    test(
+      'settles the full outstanding, closes the loan, and zeroes it out',
+      () {
+        final loan = db.loan('L006')!; // Venkat Rao, active
+        final outstanding = loan.outstanding;
+
+        final receipt = db.closeLoan('L006', mode: PaymentMode.cash);
+
+        final loanAfter = db.loan('L006')!;
+        expect(loanAfter.status, LoanStatus.closed);
+        expect(loanAfter.closedDate, isNotNull);
+        expect(loanAfter.outstanding, 0);
+        expect(loanAfter.totalPaid, loanAfter.totalRepayable);
+        expect(
+          loanAfter.installments.every(
+            (i) => i.status == InstallmentStatus.paid,
+          ),
+          isTrue,
+        );
+        expect(receipt.payment.amount, outstanding);
+        expect(receipt.newLoanOutstanding, 0);
+      },
+    );
+
+    test('recomputes the borrower after closing', () {
+      db.closeLoan('L006', mode: PaymentMode.upi);
+
+      final borrower = db.borrower('B005')!;
+      expect(borrower.activeLoans, 0);
+      expect(borrower.totalOutstanding, 0);
+    });
+
+    test('emits a DataChange covering loan, borrower and payment', () async {
+      final future = db.changes.first;
+
+      db.closeLoan('L006', mode: PaymentMode.cash);
+
+      final change = await future;
+      expect(
+        change.kinds,
+        containsAll({
+          EntityKind.loan,
+          EntityKind.installment,
+          EntityKind.borrower,
+          EntityKind.payment,
+        }),
+      );
+    });
+  });
+
   group('MockDatabase.reset / loadDemo', () {
     test('reset clears every collection', () {
       final db = MockDatabase();

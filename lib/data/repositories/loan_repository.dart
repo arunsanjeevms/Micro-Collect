@@ -1,4 +1,6 @@
+import '../../core/models/collection_entry.dart' show PaymentMode;
 import '../../core/models/loan.dart';
+import 'collection_repository.dart' show PaymentReceipt;
 
 /// The fields a new loan application collects.
 class LoanDraft {
@@ -27,4 +29,13 @@ abstract interface class LoanRepository {
   Future<List<Loan>> fetchForBorrower(String borrowerId);
 
   Future<Loan> create(LoanDraft draft);
+
+  /// Settles a loan's full remaining outstanding in one payment and marks
+  /// it closed. Returns the same PaymentReceipt shape recordPayment does,
+  /// so the closure flow can reuse PaymentSuccessScreen/PaymentReceiptScreen.
+  Future<PaymentReceipt> closeLoan(
+    String loanId, {
+    required PaymentMode mode,
+    String? notes,
+  });
 }
