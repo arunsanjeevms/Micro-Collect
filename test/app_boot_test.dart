@@ -31,7 +31,7 @@ void main() {
   });
 
   testWidgets(
-    'the add-borrower FAB opens the registration form, not a borrower detail page',
+    'the add-borrower FAB opens the registration wizard, not a borrower detail page',
     (WidgetTester tester) async {
       // Regression test: "/borrowers/:id" was declared before "/borrowers/add"
       // in the route table, so go_router matched "/borrowers/add" as a detail
@@ -46,8 +46,76 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Add Borrower'), findsOneWidget);
-      expect(find.text('Register Borrower'), findsOneWidget);
+      expect(find.text('Step 1 of 5'), findsOneWidget);
       expect(find.text('Borrower not found'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'completing the registration wizard adds the borrower to the list',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(appUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Borrowers'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FloatingActionButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      // Step 1: Basic Info
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Full Name *'),
+        'Test Borrower',
+      );
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // Step 2: Contact & Address
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Mobile Number *'),
+        '9876543210',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Aadhaar Number *'),
+        '123456789012',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address *'),
+        '12 Test Street',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Village / Town *'),
+        'Test Village',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'PIN Code *'),
+        '507001',
+      );
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // Step 3: KYC & Nominee - every field is optional.
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // Step 4: Documents & Signature - signature is required to advance.
+      await tester.tap(find.text('Tap to sign here'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // Step 5: Review & Submit
+      expect(find.text('Register Borrower'), findsOneWidget);
+      await tester.tap(find.text('Register Borrower'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add Borrower'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('Test Borrower'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('Test Borrower'), findsOneWidget);
     },
   );
 
