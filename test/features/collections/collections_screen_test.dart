@@ -91,9 +91,10 @@ void main() {
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
 
-      // Sheet closed and a confirmation snackbar shown.
+      // Sheet closed and the full-screen payment confirmation shown.
       expect(find.text('Confirm Payment'), findsNothing);
-      expect(find.textContaining('recorded for'), findsOneWidget);
+      expect(find.text('Payment Successful'), findsOneWidget);
+      expect(find.text('Lakshmi Devi'), findsOneWidget);
     },
   );
 }

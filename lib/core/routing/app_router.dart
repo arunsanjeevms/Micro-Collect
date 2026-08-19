@@ -10,7 +10,10 @@ import '../../features/loans/loan_detail_screen.dart';
 import '../../features/loans/create_loan_screen.dart';
 import '../../features/loans/borrower_loans_screen.dart';
 import '../../features/collections/collections_screen.dart';
+import '../../features/collections/payment_success_screen.dart';
+import '../../features/collections/payment_receipt_screen.dart';
 import '../../features/reports/reports_screen.dart';
+import '../../data/repositories/collection_repository.dart';
 import '../widgets/app_bottom_nav.dart';
 
 part 'app_router.g.dart';
@@ -89,6 +92,18 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             LoanDetailScreen(loanId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/payments/success',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            PaymentSuccessScreen(receipt: state.extra as PaymentReceipt),
+      ),
+      GoRoute(
+        path: '/payments/receipt',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            PaymentReceiptScreen(receipt: state.extra as PaymentReceipt),
       ),
     ],
   );

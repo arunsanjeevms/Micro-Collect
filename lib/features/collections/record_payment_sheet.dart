@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -52,8 +53,8 @@ class _RecordPaymentSheetState extends ConsumerState<RecordPaymentSheet> {
 
   Future<void> _confirmPayment() async {
     final amount = double.parse(_amountController.text.replaceAll(',', ''));
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final router = GoRouter.of(context);
 
     final receipt = await ref
         .read(recordPaymentControllerProvider.notifier)
@@ -79,26 +80,7 @@ class _RecordPaymentSheetState extends ConsumerState<RecordPaymentSheet> {
     }
 
     navigator.pop();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle,
-              color: AppColors.successLight,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '${receipt.payment.receiptNo}: ${AppFormatters.currency(receipt.payment.amount)} recorded for ${receipt.payment.borrowerName}',
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    router.push('/payments/success', extra: receipt);
   }
 
   @override
