@@ -58,6 +58,10 @@ class MockDatabase implements ChangeFeed {
   List<DailyCollection> weeklyCollections() =>
       List.unmodifiable(_weeklyCollections);
 
+  List<Payment> paymentsForDate(DateTime date) =>
+      _payments.values.where((p) => _isSameDate(p.paidAt, date)).toList()
+        ..sort(_newestFirst);
+
   List<Payment> paymentsForLoan(String loanId) =>
       _payments.values.where((p) => p.loanId == loanId).toList()
         ..sort(_newestFirst);

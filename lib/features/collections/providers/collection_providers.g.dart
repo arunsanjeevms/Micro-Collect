@@ -186,6 +186,45 @@ final class FilteredCollectionsProvider
 String _$filteredCollectionsHash() =>
     r'c68a48890704fb3ae8d311183bf58ddc09a65708';
 
+@ProviderFor(todayPayments)
+final todayPaymentsProvider = TodayPaymentsProvider._();
+
+final class TodayPaymentsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Payment>>,
+          List<Payment>,
+          FutureOr<List<Payment>>
+        >
+    with $FutureModifier<List<Payment>>, $FutureProvider<List<Payment>> {
+  TodayPaymentsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'todayPaymentsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$todayPaymentsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Payment>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Payment>> create(Ref ref) {
+    return todayPayments(ref);
+  }
+}
+
+String _$todayPaymentsHash() => r'6fd113fe52e3c03f0d761327eb86ceeebc3d73b9';
+
 @ProviderFor(paymentsForLoan)
 final paymentsForLoanProvider = PaymentsForLoanFamily._();
 

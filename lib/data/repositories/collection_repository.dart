@@ -21,7 +21,8 @@ class CollectionSummary {
   final int overdueCount;
   final int partialCount;
 
-  double get efficiency => totalDue > 0 ? (totalCollected / totalDue) * 100 : 100;
+  double get efficiency =>
+      totalDue > 0 ? (totalCollected / totalDue) * 100 : 100;
 }
 
 /// What recordPayment needs: which of today's collection entries this
@@ -64,6 +65,11 @@ abstract interface class CollectionRepository {
   Future<CollectionSummary> summaryForDate(DateTime date);
 
   Future<PaymentReceipt> recordPayment(RecordPaymentInput input);
+
+  /// Every payment actually recorded on the given date, newest first -
+  /// distinct from fetchForDate, which returns that date's due
+  /// CollectionEntry rows regardless of whether/when they were paid.
+  Future<List<Payment>> paymentsForDate(DateTime date);
 
   Future<List<Payment>> paymentsForLoan(String loanId);
 

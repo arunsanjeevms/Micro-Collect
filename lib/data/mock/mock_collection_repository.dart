@@ -26,6 +26,10 @@ class MockCollectionRepository implements CollectionRepository {
       _gateway.call(MockOp.payment, () => _db.recordPayment(input));
 
   @override
+  Future<List<Payment>> paymentsForDate(DateTime date) =>
+      _gateway.call(MockOp.read, () => _db.paymentsForDate(date));
+
+  @override
   Future<List<Payment>> paymentsForLoan(String loanId) =>
       _gateway.call(MockOp.read, () => _db.paymentsForLoan(loanId));
 

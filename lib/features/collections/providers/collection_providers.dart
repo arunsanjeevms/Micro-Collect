@@ -38,6 +38,14 @@ Future<List<CollectionEntry>> filteredCollections(Ref ref) async {
 }
 
 @riverpod
+Future<List<Payment>> todayPayments(Ref ref) {
+  ref.watch(dataRevisionProvider(EntityKind.payment));
+  return ref
+      .watch(collectionRepositoryProvider)
+      .paymentsForDate(DateTime.now());
+}
+
+@riverpod
 Future<List<Payment>> paymentsForLoan(Ref ref, String loanId) {
   ref.watch(dataRevisionProvider(EntityKind.payment));
   return ref.watch(collectionRepositoryProvider).paymentsForLoan(loanId);
