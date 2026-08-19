@@ -1,49 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/models/borrower.dart';
+import '../../core/models/loan.dart';
+import '../../core/models/payment.dart';
+import '../../core/widgets/async_value_view.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/status_badge.dart';
-import '../../core/models/mock_data.dart';
 import '../../core/utils/avatar_color.dart';
 import '../../core/utils/formatters.dart';
+import '../collections/providers/collection_providers.dart';
+import '../loans/providers/loan_providers.dart';
+import 'providers/borrower_providers.dart';
 
 /// Borrower Detail Screen — profile, loans, and payment history
-class BorrowerDetailScreen extends StatelessWidget {
+class BorrowerDetailScreen extends ConsumerWidget {
   final String borrowerId;
 
   const BorrowerDetailScreen({super.key, required this.borrowerId});
 
   @override
-  Widget build(BuildContext context) {
-    final borrowerMatches = MockData.borrowers.where((b) => b.id == borrowerId);
-    if (borrowerMatches.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Borrower')),
-        body: EmptyStateWidget(
-          icon: Icons.person_off_outlined,
-          title: 'Borrower not found',
-          description:
-              'This borrower may have been removed or the link is invalid.',
-        ),
-      );
-    }
-    final borrower = borrowerMatches.first;
-    final borrowerLoans = MockData.loans
-        .where((l) => l.borrowerId == borrowerId)
-        .toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final borrowerAsync = ref.watch(borrowerByIdProvider(borrowerId));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(borrower.name),
+        title: Text(borrowerAsync.value?.name ?? 'Borrower'),
         actions: [
           IconButton(icon: const Icon(Icons.edit_rounded), onPressed: () {}),
           IconButton(icon: const Icon(Icons.phone_rounded), onPressed: () {}),
         ],
       ),
+      body: AsyncValueView<Borrower>(
+        value: borrowerAsync,
+        onRetry: () => ref.invalidate(borrowerByIdProvider(borrowerId)),
+        data: (borrower) =>
+            _BorrowerDetailBody(borrower: borrower, borrowerId: borrowerId),
+      ),
+    );
+  }
+}
+
+class _BorrowerDetailBody extends ConsumerWidget {
+  final Borrower borrower;
+  final String borrowerId;
+
+  const _BorrowerDetailBody({required this.borrower, required this.borrowerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loansAsync = ref.watch(loansForBorrowerProvider(borrowerId));
+    final paymentsAsync = ref.watch(paymentsForBorrowerProvider(borrowerId));
+
+    return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.marginMobile),
         child: Column(
@@ -182,33 +196,34 @@ class BorrowerDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            if (borrowerLoans.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Center(
-                  child: Text(
-                    'No loans found',
-                    style: AppTypography.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              )
-            else
-              ...borrowerLoans.map(
-                (loan) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: _LoanCard(
-                    loan: loan,
-                    onTap: () => context.push('/loans/${loan.id}'),
-                  ),
-                ),
+            AsyncValueView<List<Loan>>(
+              value: loansAsync,
+              isEmpty: (list) => list.isEmpty,
+              empty: EmptyStateWidget(
+                icon: Icons.receipt_long_outlined,
+                title: 'No loans yet',
+                description: 'New loans for this borrower appear here.',
+                actionLabel: 'New Loan',
+                onAction: () =>
+                    context.push('/loans/create?borrowerId=$borrowerId'),
               ),
+              loading: () => const _LoanListSkeleton(),
+              onRetry: () =>
+                  ref.invalidate(loansForBorrowerProvider(borrowerId)),
+              data: (borrowerLoans) => Column(
+                children: borrowerLoans
+                    .map(
+                      (loan) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _LoanCard(
+                          loan: loan,
+                          onTap: () => context.push('/loans/${loan.id}'),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
 
             const SizedBox(height: AppSpacing.xl),
 
@@ -221,13 +236,26 @@ class BorrowerDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            ...List.generate(
-              3,
-              (i) => _PaymentTimelineItem(
-                amount: [2200.0, 2200.0, 2200.0][i],
-                date: DateTime.now().subtract(Duration(days: 30 * (i + 1))),
-                mode: ['Cash', 'UPI', 'Cash'][i],
-                isLast: i == 2,
+            AsyncValueView<List<Payment>>(
+              value: paymentsAsync,
+              isEmpty: (list) => list.isEmpty,
+              empty: EmptyStateWidget(
+                icon: Icons.history_rounded,
+                title: 'No payments yet',
+                description:
+                    'Payments collected from this borrower appear here.',
+              ),
+              loading: () => const SizedBox.shrink(),
+              onRetry: () =>
+                  ref.invalidate(paymentsForBorrowerProvider(borrowerId)),
+              data: (payments) => Column(
+                children: [
+                  for (var i = 0; i < payments.length; i++)
+                    _PaymentTimelineItem(
+                      payment: payments[i],
+                      isLast: i == payments.length - 1,
+                    ),
+                ],
               ),
             ),
 
@@ -258,12 +286,36 @@ class BorrowerDetailScreen extends StatelessWidget {
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => context.push('/collections'),
                 icon: const Icon(Icons.payments_rounded, size: 18),
                 label: const Text('Record Payment'),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Loan List Skeleton ────────────────────────────────────────────
+class _LoanListSkeleton extends StatelessWidget {
+  const _LoanListSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(
+        2,
+        (_) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Container(
+            height: 110,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
       ),
     );
@@ -488,17 +540,10 @@ class _LoanCard extends StatelessWidget {
 
 // ─── Payment Timeline Item ───────────────────────────────────────
 class _PaymentTimelineItem extends StatelessWidget {
-  final double amount;
-  final DateTime date;
-  final String mode;
+  final Payment payment;
   final bool isLast;
 
-  const _PaymentTimelineItem({
-    required this.amount,
-    required this.date,
-    required this.mode,
-    this.isLast = false,
-  });
+  const _PaymentTimelineItem({required this.payment, this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +590,7 @@ class _PaymentTimelineItem extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppFormatters.currency(amount),
+                          AppFormatters.currency(payment.amount),
                           style: AppTypography.titleMd.copyWith(
                             color: AppColors.success,
                             fontSize: 15,
@@ -553,7 +598,7 @@ class _PaymentTimelineItem extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          AppFormatters.date(date),
+                          AppFormatters.date(payment.paidAt),
                           style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant,
                             fontSize: 12,
@@ -571,7 +616,7 @@ class _PaymentTimelineItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        mode,
+                        payment.mode.name.toUpperCase(),
                         style: AppTypography.labelMd.copyWith(
                           fontSize: 11,
                           color: AppColors.onSurfaceVariant,
