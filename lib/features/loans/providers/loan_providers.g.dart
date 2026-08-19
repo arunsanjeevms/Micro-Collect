@@ -248,3 +248,62 @@ abstract class _$CreateLoanController extends $AsyncNotifier<Loan?> {
     return element.handleCreate(ref, build);
   }
 }
+
+/// The Loan Closure screen's controller. Reuses PaymentReceipt so the
+/// success flow can be the same PaymentSuccessScreen/PaymentReceiptScreen
+/// a regular payment lands on.
+
+@ProviderFor(CloseLoanController)
+final closeLoanControllerProvider = CloseLoanControllerProvider._();
+
+/// The Loan Closure screen's controller. Reuses PaymentReceipt so the
+/// success flow can be the same PaymentSuccessScreen/PaymentReceiptScreen
+/// a regular payment lands on.
+final class CloseLoanControllerProvider
+    extends $AsyncNotifierProvider<CloseLoanController, PaymentReceipt?> {
+  /// The Loan Closure screen's controller. Reuses PaymentReceipt so the
+  /// success flow can be the same PaymentSuccessScreen/PaymentReceiptScreen
+  /// a regular payment lands on.
+  CloseLoanControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'closeLoanControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$closeLoanControllerHash();
+
+  @$internal
+  @override
+  CloseLoanController create() => CloseLoanController();
+}
+
+String _$closeLoanControllerHash() =>
+    r'8c657eab69e94278ff00cb32d48a679ad7c3b076';
+
+/// The Loan Closure screen's controller. Reuses PaymentReceipt so the
+/// success flow can be the same PaymentSuccessScreen/PaymentReceiptScreen
+/// a regular payment lands on.
+
+abstract class _$CloseLoanController extends $AsyncNotifier<PaymentReceipt?> {
+  FutureOr<PaymentReceipt?> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<PaymentReceipt?>, PaymentReceipt?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<PaymentReceipt?>, PaymentReceipt?>,
+              AsyncValue<PaymentReceipt?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
