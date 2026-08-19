@@ -280,3 +280,66 @@ final class FilteredBorrowersProvider
 }
 
 String _$filteredBorrowersHash() => r'c24dc98bab3235e089c8736395ac8dfef2347e8b';
+
+/// The borrower-registration form's controller, mirroring
+/// CreateLoanController and RecordPaymentController's guard/mounted
+/// pattern. No invalidate needed - MockDatabase.insertBorrower's
+/// DataChange propagates to borrowersProvider on its own.
+
+@ProviderFor(CreateBorrowerController)
+final createBorrowerControllerProvider = CreateBorrowerControllerProvider._();
+
+/// The borrower-registration form's controller, mirroring
+/// CreateLoanController and RecordPaymentController's guard/mounted
+/// pattern. No invalidate needed - MockDatabase.insertBorrower's
+/// DataChange propagates to borrowersProvider on its own.
+final class CreateBorrowerControllerProvider
+    extends $AsyncNotifierProvider<CreateBorrowerController, Borrower?> {
+  /// The borrower-registration form's controller, mirroring
+  /// CreateLoanController and RecordPaymentController's guard/mounted
+  /// pattern. No invalidate needed - MockDatabase.insertBorrower's
+  /// DataChange propagates to borrowersProvider on its own.
+  CreateBorrowerControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'createBorrowerControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$createBorrowerControllerHash();
+
+  @$internal
+  @override
+  CreateBorrowerController create() => CreateBorrowerController();
+}
+
+String _$createBorrowerControllerHash() =>
+    r'2b75a543d4b92e28190b25002c0bc91b92c60ffd';
+
+/// The borrower-registration form's controller, mirroring
+/// CreateLoanController and RecordPaymentController's guard/mounted
+/// pattern. No invalidate needed - MockDatabase.insertBorrower's
+/// DataChange propagates to borrowersProvider on its own.
+
+abstract class _$CreateBorrowerController extends $AsyncNotifier<Borrower?> {
+  FutureOr<Borrower?> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<Borrower?>, Borrower?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<Borrower?>, Borrower?>,
+              AsyncValue<Borrower?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

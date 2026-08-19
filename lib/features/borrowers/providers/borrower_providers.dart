@@ -5,6 +5,7 @@ import '../../../core/data/data_revision.dart';
 import '../../../core/data/entity_kind.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/models/borrower.dart';
+import '../../../data/repositories/borrower_repository.dart';
 import '../../../data/repositories/repository_providers.dart';
 
 part 'borrower_providers.freezed.dart';
@@ -79,4 +80,24 @@ Future<List<Borrower>> filteredBorrowers(Ref ref) async {
   final all = await ref.watch(borrowersProvider.future);
   final filter = ref.watch(borrowerQueryProvider);
   return all.where(filter.matches).toList();
+}
+
+/// The borrower-registration form's controller, mirroring
+/// CreateLoanController and RecordPaymentController's guard/mounted
+/// pattern. No invalidate needed - MockDatabase.insertBorrower's
+/// DataChange propagates to borrowersProvider on its own.
+@riverpod
+class CreateBorrowerController extends _$CreateBorrowerController {
+  @override
+  FutureOr<Borrower?> build() => null;
+
+  Future<Borrower?> submit(BorrowerDraft draft) async {
+    state = const AsyncLoading<Borrower?>();
+    final result = await AsyncValue.guard(
+      () => ref.read(borrowerRepositoryProvider).create(draft),
+    );
+    if (!ref.mounted) return null;
+    state = result;
+    return result.value;
+  }
 }
