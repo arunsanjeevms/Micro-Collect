@@ -1,0 +1,180 @@
+// MicroCollect backend data model.
+// Mirrors the domain models in the Flutter app (lib/core/models/) field
+// for field, so the API can be a drop-in replacement for the mock
+// repositories without changing what the UI expects to see.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  FIELD_OFFICER
+  CASHIER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(FIELD_OFFICER)
+  createdAt    DateTime @default(now())
+}
+
+enum BorrowerStatus {
+  active
+  overdue
+  closed
+}
+
+model Borrower {
+  id                String         @id @db.VarChar(16)
+  name              String
+  mobile            String         @db.VarChar(16)
+  aadhaar           String         @db.VarChar(16)
+  village           String
+  address           String         @db.Text
+  pinCode           String         @db.VarChar(8)
+  joinDate          DateTime
+  // activeLoans and totalOutstanding are derived from this borrower's
+  // loans on every write (see services/borrowerService.js), mirroring
+  // MockDatabase._recomputeBorrower - never trusted as caller input.
+  activeLoans       Int            @default(0)
+  totalOutstanding  Decimal        @default(0) @db.Decimal(12, 2)
+  status            BorrowerStatus @default(active)
+
+  loans             Loan[]
+  collectionEntries CollectionEntry[]
+  payments          Payment[]
+
+  @@index([status])
+}
+
+enum LoanStatus {
+  active
+  closed
+  overdue
+  disbursed
+}
+
+model Loan {
+  id                String     @id @db.VarChar(16)
+  borrowerId        String     @db.VarChar(16)
+  borrower          Borrower   @relation(fields: [borrowerId], references: [id])
+  borrowerName      String
+  principal         Decimal    @db.Decimal(12, 2)
+  annualRate        Decimal    @db.Decimal(5, 2)
+  tenureMonths      Int
+  frequency         String     @db.VarChar(16) // daily, weekly, monthly
+  totalRepayable    Decimal    @db.Decimal(12, 2)
+  totalPaid         Decimal    @default(0) @db.Decimal(12, 2)
+  paidInstallments  Int        @default(0)
+  totalInstallments Int
+  disbursementDate  DateTime
+  closedDate        DateTime?
+  status            LoanStatus @default(disbursed)
+
+  installments      Installment[]
+  collectionEntries CollectionEntry[]
+  payments          Payment[]
+
+  @@index([borrowerId])
+  @@index([status])
+}
+
+enum InstallmentStatus {
+  paid
+  pending
+  overdue
+  partial
+  advance
+}
+
+model Installment {
+  id         String            @id @db.VarChar(16)
+  loanId     String            @db.VarChar(16)
+  loan       Loan              @relation(fields: [loanId], references: [id])
+  number     Int
+  dueDate    DateTime
+  amount     Decimal           @db.Decimal(12, 2)
+  paidAmount Decimal?          @db.Decimal(12, 2)
+  paidDate   DateTime?
+  status     InstallmentStatus @default(pending)
+
+  paymentLinks PaymentInstallment[]
+
+  @@index([loanId])
+  @@index([dueDate])
+}
+
+enum PaymentMode {
+  cash
+  upi
+  bank
+}
+
+enum CollectionStatus {
+  pending
+  collected
+  overdue
+  partial
+}
+
+model CollectionEntry {
+  id           String            @id @db.VarChar(16)
+  borrowerId   String            @db.VarChar(16)
+  borrower     Borrower          @relation(fields: [borrowerId], references: [id])
+  borrowerName String
+  loanId       String            @db.VarChar(16)
+  loan         Loan              @relation(fields: [loanId], references: [id])
+  previousDue  Decimal           @default(0) @db.Decimal(12, 2)
+  amountDue    Decimal           @db.Decimal(12, 2)
+  amountPaid   Decimal?          @db.Decimal(12, 2)
+  dueDate      DateTime
+  paidDate     DateTime?
+  paymentMode  PaymentMode?
+  notes        String?           @db.Text
+  status       CollectionStatus  @default(pending)
+
+  @@index([borrowerId])
+  @@index([loanId])
+  @@index([dueDate])
+}
+
+model Payment {
+  id           String      @id @db.VarChar(16)
+  receiptNo    String      @unique @db.VarChar(32)
+  borrowerId   String      @db.VarChar(16)
+  borrower     Borrower    @relation(fields: [borrowerId], references: [id])
+  borrowerName String
+  loanId       String      @db.VarChar(16)
+  loan         Loan        @relation(fields: [loanId], references: [id])
+  amount       Decimal     @db.Decimal(12, 2)
+  mode         PaymentMode
+  notes        String?     @db.Text
+  paidAt       DateTime    @default(now())
+
+  installmentLinks PaymentInstallment[]
+
+  @@index([loanId])
+  @@index([borrowerId])
+  @@index([paidAt])
+}
+
+// Join table for Payment.installmentIds (a payment can settle more than
+// one installment in one go, e.g. clearing arrears + today's due).
+model PaymentInstallment {
+  paymentId     String      @db.VarChar(16)
+  payment       Payment     @relation(fields: [paymentId], references: [id])
+  installmentId String      @db.VarChar(16)
+  installment   Installment @relation(fields: [installmentId], references: [id])
+
+  @@id([paymentId, installmentId])
+}
