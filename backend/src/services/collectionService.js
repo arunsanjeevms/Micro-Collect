@@ -31,8 +31,11 @@ async function summaryForDate(date) {
   let partialCount = 0;
 
   for (const row of rows) {
-    const due = toNumber(row.previousDue) + toNumber(row.amountDue);
-    totalDue += due;
+    // Matches MockCollectionRepository._summarize: totalDue is today's
+    // amountDue only, deliberately excluding previousDue/arrears - a
+    // borrower's summary card is "what's due today", not the full
+    // outstanding balance including carried-over misses.
+    totalDue += toNumber(row.amountDue);
     totalCollected += row.amountPaid ? toNumber(row.amountPaid) : 0;
     if (row.status === 'collected') collectedCount++;
     else if (row.status === 'pending') pendingCount++;

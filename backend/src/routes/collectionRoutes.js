@@ -36,7 +36,7 @@ router.get(
 const recordPaymentSchema = z.object({
   amount: z.number().positive(),
   mode: z.enum(['cash', 'upi', 'bank']),
-  notes: z.string().optional(),
+  notes: z.string().nullish(),
 });
 
 router.post(

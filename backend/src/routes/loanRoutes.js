@@ -47,7 +47,7 @@ router.post(
 
 const closeLoanSchema = z.object({
   mode: z.enum(['cash', 'upi', 'bank']),
-  notes: z.string().optional(),
+  notes: z.string().nullish(),
 });
 
 router.post(
