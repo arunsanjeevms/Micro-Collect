@@ -1,19 +1,30 @@
 # MicroCollect
 
-A rural microfinance collection-management app for field officers — built with Flutter and Material 3, styled after Google Stitch's "Growth & Trust" design system.
-
-This is currently a **frontend-only prototype**: every screen is fully built and navigable, but all data lives in an in-memory mock backend (`lib/data/mock/`). There is no real API or persistence layer yet — restarting the app resets all data to the seeded demo state.
+A rural microfinance collection-management app for field officers — built with Flutter and Material 3, styled after Google Stitch's "Growth & Trust" design system, backed by a Node.js + MySQL API.
 
 ## Status
 
 - Full UI implemented for the core field-officer flow: dashboard, borrower registration and management, loan origination and servicing, daily collections, payments, and reporting.
-- Reactive state via Riverpod, backed by a single in-memory `MockDatabase` with simulated network latency and injectable failures.
+- A real backend (`backend/` — Express + Prisma + MySQL, see `backend/README.md`) with JWT auth, a login screen, and every write path (record payment, close loan, register borrower, create loan) persisted for real.
+- The Flutter app can still run against an in-memory mock backend (`lib/data/mock/`) instead — see "Backend modes" below — which is what the widget/unit test suite uses, so tests need no live server.
+- Reactive state via Riverpod: every screen watches `dataRevisionProvider(EntityKind.x)`, so a write anywhere propagates automatically with no explicit `ref.invalidate` calls, whichever backend is active.
 - `flutter analyze` is clean and the widget/unit test suite passes.
-- No backend, no auth, no real persistence, no printer/Bluetooth integration — these are explicitly out of scope for this phase.
+- No printer/Bluetooth integration — the printer/receipt screens are UI-only and say so.
+
+## Backend modes
+
+`lib/main.dart` picks which backend the app talks to via which `ProviderScope` overrides it installs:
+
+- **Remote (default)** — `remoteBackendOverrides()` (`lib/data/remote/`), talking to the API in `backend/`. Requires the backend running (see `backend/README.md`) and a login.
+- **Mock** — `mockBackendOverrides()` (`lib/data/mock/`), an in-memory store with no server required. Swap back to it by editing the two lines at the top of `main()` (commented in place). This is always what `flutter test` uses, regardless of which mode `main.dart` is set to.
 
 ## Getting Started
 
 ```bash
+# Backend (see backend/README.md for full setup)
+cd backend && npm install && npx prisma migrate dev && npm run seed && npm run dev
+
+# Flutter app
 flutter pub get                       # install dependencies
 flutter run                           # run on a connected device/emulator
 flutter run -d chrome                 # run in the browser
@@ -43,10 +54,10 @@ dart format .                         # formatting
 
 **State management**: Riverpod with code-generated providers (`@riverpod` functions/classes + `part '*.g.dart'`). Every list/detail provider watches `dataRevisionProvider(EntityKind.x)`, so a write anywhere in the app propagates to every screen that reads that entity kind — no manual `ref.invalidate` calls anywhere.
 
-**Mock backend** (`lib/data/`):
-- `mock/mock_database.dart` — the single in-memory store every write goes through. A payment, loan closure, or new registration mutates the loan/installments/borrower/collection-entry/payment records together and emits one `DataChange`.
-- `mock/mock_gateway.dart` + `dev/dev_settings.dart` — simulated latency and injectable per-operation failures, so loading and error states are real rather than decorative.
-- `repositories/` — abstract repository interfaces the UI depends on; `mock/mock_*_repository.dart` are the only implementations today.
+**Data layer** (`lib/data/`):
+- `repositories/` — abstract repository interfaces (`BorrowerRepository`, `LoanRepository`, `CollectionRepository`) the UI depends on; it never knows which backend is behind them.
+- `remote/` — the real backend: `ApiClient` (bearer-token HTTP wrapper), hand-written `dto_mappers.dart` (JSON ↔ freezed models), `Remote*Repository` implementations, and `RemoteChangeFeed` (publishes the same `DataChange` a write would emit locally, since the API has no push channel yet).
+- `mock/` — the in-memory alternative: `mock_database.dart` is the single store every write goes through (a payment, loan closure, or new registration mutates loan/installments/borrower/collection-entry/payment together and emits one `DataChange`); `mock_gateway.dart` + `dev/dev_settings.dart` simulate latency and injectable per-operation failures.
 
 **Domain models** (`lib/core/models/`): `Borrower`, `Loan`, `Installment`, `CollectionEntry`, `Payment`, `DailyCollection` — all `freezed` value types with derived getters (e.g. `Loan.outstanding`, `Borrower.initials`). IDs follow `B00x` / `L00x` / `I00x` / `C00x` / `P00x` prefixes so cross-references between borrowers, loans, and collections stay resolvable.
 
@@ -69,4 +80,4 @@ Screens under "More" that have no backing domain model yet (Employees, Areas, Ro
 
 ## What's next
 
-A real backend (API + persistence) is the next major phase. `lib/core/utils/loan_calculator.dart` is deliberately kept isolated from UI code so it can become backend-authoritative later without UI rework.
+Printer/Bluetooth hardware integration and persisted device settings (currently local widget state in the "More" screens) are the main remaining gaps. `lib/core/utils/loan_calculator.dart`, `schedule_builder.dart`, and `payment_allocator.dart` are ported 1:1 into `backend/src/services/`, so both backends compute identical numbers — see `backend/README.md` for the API's architecture.
