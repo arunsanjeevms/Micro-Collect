@@ -51,21 +51,25 @@ remoteBackendOverrides() {
     areaRepositoryProvider.overrideWith(
       (ref) => RemoteAreaRepository(
         ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+        changeFeed,
       ),
     ),
     employeeRepositoryProvider.overrideWith(
       (ref) => RemoteEmployeeRepository(
         ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+        changeFeed,
       ),
     ),
     loanSchemeRepositoryProvider.overrideWith(
       (ref) => RemoteLoanSchemeRepository(
         ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+        changeFeed,
       ),
     ),
     roleRepositoryProvider.overrideWith(
       (ref) => RemoteRoleRepository(
         ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+        changeFeed,
       ),
     ),
   ];

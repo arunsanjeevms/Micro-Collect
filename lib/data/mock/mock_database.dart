@@ -395,7 +395,7 @@ class MockDatabase implements ChangeFeed {
       outstanding: 0,
     );
     _areas[id] = area;
-    _emit(const DataChange({EntityKind.borrower}));
+    _emit(const DataChange({EntityKind.area}));
     return _areaWithStats(area);
   }
 
@@ -408,7 +408,7 @@ class MockDatabase implements ChangeFeed {
       active: patch.active ?? existing.active,
     );
     _areas[id] = updated;
-    _emit(const DataChange({EntityKind.borrower}));
+    _emit(const DataChange({EntityKind.area}));
     return _areaWithStats(updated);
   }
 
@@ -422,7 +422,7 @@ class MockDatabase implements ChangeFeed {
       );
     }
     _areas.remove(id);
-    _emit(const DataChange({EntityKind.borrower}));
+    _emit(const DataChange({EntityKind.area}));
   }
 
   // ─── Employees ──────────────────────────────────────────────────
@@ -445,7 +445,7 @@ class MockDatabase implements ChangeFeed {
       joinDate: DateTime.now(),
     );
     _employees[id] = employee;
-    _emit(const DataChange({EntityKind.borrower}));
+    _emit(const DataChange({EntityKind.employee}));
     return _withAreaName(employee);
   }
 
@@ -459,14 +459,14 @@ class MockDatabase implements ChangeFeed {
       status: patch.status ?? existing.status,
     );
     _employees[id] = updated;
-    _emit(const DataChange({EntityKind.borrower}));
+    _emit(const DataChange({EntityKind.employee}));
     return _withAreaName(updated);
   }
 
   void deleteEmployee(String id) {
     if (!_employees.containsKey(id)) throw NotFoundException('Employee', id);
     _employees.remove(id);
-    _emit(const DataChange({EntityKind.borrower}));
+    _emit(const DataChange({EntityKind.employee}));
   }
 
   // ─── Loan Schemes ───────────────────────────────────────────────
@@ -497,7 +497,7 @@ class MockDatabase implements ChangeFeed {
       frequency: draft.frequency,
     );
     _loanSchemes[id] = scheme;
-    _emit(const DataChange({EntityKind.loan}));
+    _emit(const DataChange({EntityKind.loanScheme}));
     return scheme;
   }
 
@@ -506,7 +506,7 @@ class MockDatabase implements ChangeFeed {
     if (existing == null) throw NotFoundException('Loan scheme', id);
     final updated = existing.copyWith(active: active);
     _loanSchemes[id] = updated;
-    _emit(const DataChange({EntityKind.loan}));
+    _emit(const DataChange({EntityKind.loanScheme}));
     return updated;
   }
 
@@ -515,7 +515,7 @@ class MockDatabase implements ChangeFeed {
       throw NotFoundException('Loan scheme', id);
     }
     _loanSchemes.remove(id);
-    _emit(const DataChange({EntityKind.loan}));
+    _emit(const DataChange({EntityKind.loanScheme}));
   }
 
   // ─── Roles & Permissions ────────────────────────────────────────
@@ -555,7 +555,7 @@ class MockDatabase implements ChangeFeed {
     final id = _nextId('ROLE', _roles.keys);
     final record = _RoleRecord(id: id, name: name, isSystem: false);
     _roles[id] = record;
-    _emit(const DataChange({EntityKind.sync}));
+    _emit(const DataChange({EntityKind.role}));
     return _roleWithPermissions(record);
   }
 
@@ -566,7 +566,7 @@ class MockDatabase implements ChangeFeed {
       throw NotFoundException('Permission', permissionId);
     }
     record.grants[permissionId] = granted;
-    _emit(const DataChange({EntityKind.sync}));
+    _emit(const DataChange({EntityKind.role}));
     return _roleWithPermissions(record);
   }
 
@@ -577,7 +577,7 @@ class MockDatabase implements ChangeFeed {
       throw const ValidationException('System roles cannot be deleted');
     }
     _roles.remove(id);
-    _emit(const DataChange({EntityKind.sync}));
+    _emit(const DataChange({EntityKind.role}));
   }
 
   void loadDemo() {

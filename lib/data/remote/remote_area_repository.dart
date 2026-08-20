@@ -1,12 +1,15 @@
+import '../../core/data/entity_kind.dart';
 import '../../core/models/area.dart';
 import '../repositories/area_repository.dart';
 import 'api_client.dart';
 import 'dto_mappers.dart';
+import 'remote_change_feed.dart';
 
 class RemoteAreaRepository implements AreaRepository {
-  RemoteAreaRepository(this._client);
+  RemoteAreaRepository(this._client, this._changeFeed);
 
   final ApiClient _client;
+  final RemoteChangeFeed _changeFeed;
 
   @override
   Future<List<Area>> fetchAll() async {
@@ -20,7 +23,9 @@ class RemoteAreaRepository implements AreaRepository {
       '/areas',
       body: {'code': draft.code, 'name': draft.name, 'active': draft.active},
     );
-    return areaFromJson(json as Map<String, dynamic>);
+    final area = areaFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.area}));
+    return area;
   }
 
   @override
@@ -33,9 +38,14 @@ class RemoteAreaRepository implements AreaRepository {
         if (patch.active != null) 'active': patch.active,
       },
     );
-    return areaFromJson(json as Map<String, dynamic>);
+    final area = areaFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.area}));
+    return area;
   }
 
   @override
-  Future<void> delete(String id) => _client.delete('/areas/$id');
+  Future<void> delete(String id) async {
+    await _client.delete('/areas/$id');
+    _changeFeed.publish(const DataChange({EntityKind.area}));
+  }
 }

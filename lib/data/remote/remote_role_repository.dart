@@ -1,12 +1,15 @@
+import '../../core/data/entity_kind.dart';
 import '../../core/models/role.dart';
 import '../repositories/role_repository.dart';
 import 'api_client.dart';
 import 'dto_mappers.dart';
+import 'remote_change_feed.dart';
 
 class RemoteRoleRepository implements RoleRepository {
-  RemoteRoleRepository(this._client);
+  RemoteRoleRepository(this._client, this._changeFeed);
 
   final ApiClient _client;
+  final RemoteChangeFeed _changeFeed;
 
   @override
   Future<List<Role>> fetchAll() async {
@@ -17,7 +20,9 @@ class RemoteRoleRepository implements RoleRepository {
   @override
   Future<Role> create(String name) async {
     final json = await _client.post('/roles', body: {'name': name});
-    return roleFromJson(json as Map<String, dynamic>);
+    final role = roleFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.role}));
+    return role;
   }
 
   @override
@@ -30,9 +35,14 @@ class RemoteRoleRepository implements RoleRepository {
       '/roles/$roleId/permissions/$permissionId',
       body: {'granted': granted},
     );
-    return roleFromJson(json as Map<String, dynamic>);
+    final role = roleFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.role}));
+    return role;
   }
 
   @override
-  Future<void> delete(String id) => _client.delete('/roles/$id');
+  Future<void> delete(String id) async {
+    await _client.delete('/roles/$id');
+    _changeFeed.publish(const DataChange({EntityKind.role}));
+  }
 }

@@ -1,12 +1,15 @@
+import '../../core/data/entity_kind.dart';
 import '../../core/models/loan_scheme.dart';
 import '../repositories/loan_scheme_repository.dart';
 import 'api_client.dart';
 import 'dto_mappers.dart';
+import 'remote_change_feed.dart';
 
 class RemoteLoanSchemeRepository implements LoanSchemeRepository {
-  RemoteLoanSchemeRepository(this._client);
+  RemoteLoanSchemeRepository(this._client, this._changeFeed);
 
   final ApiClient _client;
+  final RemoteChangeFeed _changeFeed;
 
   @override
   Future<List<LoanScheme>> fetchAll() async {
@@ -32,7 +35,9 @@ class RemoteLoanSchemeRepository implements LoanSchemeRepository {
         'frequency': draft.frequency,
       },
     );
-    return loanSchemeFromJson(json as Map<String, dynamic>);
+    final scheme = loanSchemeFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.loanScheme}));
+    return scheme;
   }
 
   @override
@@ -41,9 +46,14 @@ class RemoteLoanSchemeRepository implements LoanSchemeRepository {
       '/loan-schemes/$id',
       body: {'active': active},
     );
-    return loanSchemeFromJson(json as Map<String, dynamic>);
+    final scheme = loanSchemeFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.loanScheme}));
+    return scheme;
   }
 
   @override
-  Future<void> delete(String id) => _client.delete('/loan-schemes/$id');
+  Future<void> delete(String id) async {
+    await _client.delete('/loan-schemes/$id');
+    _changeFeed.publish(const DataChange({EntityKind.loanScheme}));
+  }
 }

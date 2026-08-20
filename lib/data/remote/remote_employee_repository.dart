@@ -1,12 +1,15 @@
+import '../../core/data/entity_kind.dart';
 import '../../core/models/employee.dart';
 import '../repositories/employee_repository.dart';
 import 'api_client.dart';
 import 'dto_mappers.dart';
+import 'remote_change_feed.dart';
 
 class RemoteEmployeeRepository implements EmployeeRepository {
-  RemoteEmployeeRepository(this._client);
+  RemoteEmployeeRepository(this._client, this._changeFeed);
 
   final ApiClient _client;
+  final RemoteChangeFeed _changeFeed;
 
   @override
   Future<List<Employee>> fetchAll() async {
@@ -27,7 +30,9 @@ class RemoteEmployeeRepository implements EmployeeRepository {
         'status': draft.status.name,
       },
     );
-    return employeeFromJson(json as Map<String, dynamic>);
+    final employee = employeeFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.employee}));
+    return employee;
   }
 
   @override
@@ -41,9 +46,14 @@ class RemoteEmployeeRepository implements EmployeeRepository {
         if (patch.status != null) 'status': patch.status!.name,
       },
     );
-    return employeeFromJson(json as Map<String, dynamic>);
+    final employee = employeeFromJson(json as Map<String, dynamic>);
+    _changeFeed.publish(const DataChange({EntityKind.employee}));
+    return employee;
   }
 
   @override
-  Future<void> delete(String id) => _client.delete('/employees/$id');
+  Future<void> delete(String id) async {
+    await _client.delete('/employees/$id');
+    _changeFeed.publish(const DataChange({EntityKind.employee}));
+  }
 }

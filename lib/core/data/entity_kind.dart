@@ -8,6 +8,10 @@ enum EntityKind {
   payment,
   report,
   sync,
+  area,
+  employee,
+  role,
+  loanScheme,
 }
 
 /// Describes which entity kinds a single write affected. A payment, for
@@ -25,6 +29,10 @@ class DataChange {
         EntityKind.payment,
         EntityKind.report,
         EntityKind.sync,
+        EntityKind.area,
+        EntityKind.employee,
+        EntityKind.role,
+        EntityKind.loanScheme,
       };
 
   final Set<EntityKind> kinds;
