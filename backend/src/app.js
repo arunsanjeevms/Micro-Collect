@@ -10,6 +10,10 @@ const authRoutes = require('./routes/authRoutes');
 const borrowerRoutes = require('./routes/borrowerRoutes');
 const loanRoutes = require('./routes/loanRoutes');
 const collectionRoutes = require('./routes/collectionRoutes');
+const areaRoutes = require('./routes/areaRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const roleRoutes = require('./routes/roleRoutes');
+const loanSchemeRoutes = require('./routes/loanSchemeRoutes');
 
 const app = express();
 
@@ -24,6 +28,10 @@ app.use('/auth', authRoutes);
 app.use('/borrowers', borrowerRoutes);
 app.use('/loans', loanRoutes);
 app.use('/collections', collectionRoutes);
+app.use('/areas', areaRoutes);
+app.use('/employees', employeeRoutes);
+app.use('/roles', roleRoutes);
+app.use('/loan-schemes', loanSchemeRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: { code: 'not_found', message: 'Route not found' } });

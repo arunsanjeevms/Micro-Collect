@@ -55,6 +55,17 @@ All routes except `/auth/login` and `/health` require `Authorization: Bearer <to
 | GET | `/collections/summary?date=` | Aggregate totals for a date |
 | GET | `/collections/payments?date=` | Payments actually recorded on a date |
 | POST | `/collections/:id/payments` | Record a payment against a collection entry |
+| GET | `/areas` | List areas, with real `customers`/`activeLoans`/`outstanding` derived from assigned borrowers |
+| GET/POST/PATCH/DELETE | `/areas[/:id]` | CRUD (create/update/delete are ADMIN or MANAGER only) |
+| GET | `/employees` | List employees |
+| GET/POST/PATCH/DELETE | `/employees[/:id]` | CRUD (create/update/delete are ADMIN or MANAGER only) |
+| GET | `/loan-schemes` | List loan scheme presets |
+| GET/POST/PATCH/DELETE | `/loan-schemes[/:id]` | CRUD (create/update/delete are ADMIN or MANAGER only) |
+| GET | `/roles` | List roles with their grouped permissions |
+| GET | `/roles/permissions` | List every definable permission |
+| POST | `/roles` | Create a role (ADMIN only) - starts with every permission ungranted |
+| PATCH | `/roles/:id/permissions/:permissionId` | Toggle one permission on a role (ADMIN only) |
+| DELETE | `/roles/:id` | Delete a non-system role (ADMIN only) |
 
 ## Architecture
 
@@ -63,6 +74,7 @@ All routes except `/auth/login` and `/health` require `Authorization: Bearer <to
 - `src/services/paymentEngine.js` — the shared transaction (`applyPayment`) that both `recordPayment` (tied to a collection entry) and `closeLoan` (lump-sum payoff) build on, mirroring `MockDatabase`'s single-writer approach: one payment always updates the loan, its installments, and the borrower's derived totals together.
 - `src/middleware/auth.js` — JWT verification (`requireAuth`) and role gating (`requireRole`).
 - `src/utils/errors.js` — an error taxonomy mirroring `lib/core/errors/app_exception.dart`, so the Flutter client's error-state UI can eventually switch on the same shape regardless of which backend it's talking to.
+- `Role`/`Permission`/`RolePermission` are a separate, editable config surface from `User.role` (the fixed enum that actually gates `requireRole()` on API routes) - they model "what each role is documented to be allowed to do" for the admin UI. They don't yet feed back into request-level authorization; that would be a further phase (replacing the fixed enum with a real per-request permission check).
 
 ## Regenerating the seed data
 

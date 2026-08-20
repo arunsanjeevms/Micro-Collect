@@ -49,12 +49,103 @@ model Borrower {
   activeLoans       Int            @default(0)
   totalOutstanding  Decimal        @default(0) @db.Decimal(12, 2)
   status            BorrowerStatus @default(active)
+  areaId            String?        @db.VarChar(16)
+  area              Area?          @relation(fields: [areaId], references: [id])
 
   loans             Loan[]
   collectionEntries CollectionEntry[]
   payments          Payment[]
 
   @@index([status])
+  @@index([areaId])
+}
+
+// ─── Organization: Areas, Employees ────────────────────────────────
+
+model Area {
+  id     String  @id @db.VarChar(16)
+  code   String  @unique @db.VarChar(16)
+  name   String
+  active Boolean @default(true)
+
+  borrowers Borrower[]
+  employees Employee[]
+
+  @@index([active])
+}
+
+enum EmployeeStatus {
+  active
+  onField
+  office
+}
+
+model Employee {
+  id       String         @id @db.VarChar(16)
+  name     String
+  mobile   String         @db.VarChar(16)
+  areaId   String?        @db.VarChar(16)
+  area     Area?          @relation(fields: [areaId], references: [id])
+  status   EmployeeStatus @default(active)
+  joinDate DateTime       @default(now())
+
+  @@index([areaId])
+  @@index([status])
+}
+
+// ─── Roles & Permissions ────────────────────────────────────────────
+// A separate, editable config surface from User.role (the fixed enum
+// that actually gates requireRole() on API routes). This models "what
+// each role is documented to be allowed to do" for the admin UI; it
+// does not yet feed back into request-level authorization - see
+// backend/README.md.
+
+model Role {
+  id       String   @id @db.VarChar(16)
+  name     String   @unique
+  // System roles (seeded to match User.role) can't be deleted, since
+  // deleting one would leave real users' roles undocumented.
+  isSystem Boolean  @default(false)
+
+  permissions RolePermission[]
+}
+
+model Permission {
+  id    String @id @db.VarChar(16)
+  key   String @unique @db.VarChar(64)
+  label String
+  group String @db.VarChar(64)
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String     @db.VarChar(16)
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId String     @db.VarChar(16)
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  granted      Boolean    @default(false)
+
+  @@id([roleId, permissionId])
+}
+
+// ─── Loan Schemes ────────────────────────────────────────────────────
+// Preset templates an officer can pick from on the New Loan form
+// instead of typing principal/tenure/frequency from scratch.
+
+model LoanScheme {
+  id            String  @id @db.VarChar(16)
+  code          String  @unique @db.VarChar(16)
+  name          String
+  active        Boolean @default(true)
+  principalMin  Decimal @db.Decimal(12, 2)
+  principalMax  Decimal @db.Decimal(12, 2)
+  tenureMin     Int
+  tenureMax     Int
+  tenureUnit    String  @db.VarChar(16) // "Days", "Weeks", "Months"
+  frequency     String  @db.VarChar(16) // daily, weekly, monthly
+
+  @@index([active])
 }
 
 enum LoanStatus {

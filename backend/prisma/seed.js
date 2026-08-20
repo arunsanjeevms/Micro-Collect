@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const loanCalculator = require('../src/services/loanCalculator');
 const scheduleBuilder = require('../src/services/scheduleBuilder');
 const { recomputeBorrower } = require('../src/services/borrowerService');
+const { nextId } = require('../src/utils/idGenerator');
 
 const prisma = new PrismaClient();
 
@@ -98,6 +99,109 @@ function buildGeneratedLoan(spec) {
   };
 }
 
+// Real areas matching the villages already in `borrowers` above, rather
+// than Stitch's unrelated demo area names - so Area's customer/loan/
+// outstanding stats (computed from Borrower.areaId) are never zero.
+const areas = [
+  { code: 'KTP', name: 'Kothapalli' },
+  { code: 'RAM', name: 'Rampur' },
+  { code: 'CHN', name: 'Chintalapudi' },
+];
+
+const employees = [
+  { name: 'Arun Kumar', mobile: '9000011111', areaCode: 'KTP', status: 'active' },
+  { name: 'Priya Sharma', mobile: '9000022222', areaCode: 'RAM', status: 'active' },
+  { name: 'Rajesh Verma', mobile: '9000033333', areaCode: 'CHN', status: 'onField' },
+  { name: 'Karthik S', mobile: '9000044444', areaCode: null, status: 'office' },
+];
+
+const permissions = [
+  { key: 'collect_payments', label: 'Can Collect Payments', group: 'Core Functions' },
+  { key: 'sync_offline_data', label: 'Can Sync Offline Data', group: 'Core Functions' },
+  { key: 'register_customers', label: 'Can Register Customers', group: 'Core Functions' },
+  {
+    key: 'view_reports_personal',
+    label: 'Can View Reports (Personal)',
+    group: 'Reporting & Analytics',
+  },
+  {
+    key: 'view_reports_branch',
+    label: 'Can View Branch Reports',
+    group: 'Reporting & Analytics',
+  },
+  { key: 'manage_users', label: 'Can Manage Users', group: 'System Settings' },
+];
+
+// Matches the grants shown on the Roles & Permissions screen before it
+// had a backing model, so the UI looks the same once it's reading this.
+const roleGrants = {
+  Admin: {
+    collect_payments: true,
+    sync_offline_data: true,
+    register_customers: true,
+    view_reports_personal: true,
+    view_reports_branch: true,
+    manage_users: true,
+  },
+  Manager: {
+    collect_payments: true,
+    sync_offline_data: true,
+    register_customers: true,
+    view_reports_personal: true,
+    view_reports_branch: true,
+    manage_users: false,
+  },
+  'Field Officer': {
+    collect_payments: true,
+    sync_offline_data: true,
+    register_customers: true,
+    view_reports_personal: true,
+    view_reports_branch: false,
+    manage_users: false,
+  },
+  Cashier: {
+    collect_payments: true,
+    sync_offline_data: false,
+    register_customers: false,
+    view_reports_personal: true,
+    view_reports_branch: false,
+    manage_users: false,
+  },
+};
+
+const loanSchemes = [
+  {
+    code: 'WML-01',
+    name: 'Weekly Micro Loan',
+    principalMin: 2000,
+    principalMax: 50000,
+    tenureMin: 20,
+    tenureMax: 50,
+    tenureUnit: 'Weeks',
+    frequency: 'weekly',
+  },
+  {
+    code: 'MSL-02',
+    name: 'Monthly SME Loan',
+    principalMin: 50000,
+    principalMax: 500000,
+    tenureMin: 6,
+    tenureMax: 36,
+    tenureUnit: 'Months',
+    frequency: 'monthly',
+  },
+  {
+    code: 'DVL-03',
+    name: 'Daily Vendor Loan',
+    principalMin: 1000,
+    principalMax: 10000,
+    tenureMin: 30,
+    tenureMax: 90,
+    tenureUnit: 'Days',
+    frequency: 'daily',
+  },
+];
+
 function todayCollections(now) {
   return [
     { id: 'C001', borrowerId: 'B001', borrowerName: 'Rajesh Kumar', loanId: 'L001', amountDue: 2200, amountPaid: 2200, dueDate: now, paidDate: now, paymentMode: 'cash', status: 'collected' },
@@ -118,7 +222,13 @@ async function main() {
   await prisma.collectionEntry.deleteMany();
   await prisma.installment.deleteMany();
   await prisma.loan.deleteMany();
+  await prisma.employee.deleteMany();
   await prisma.borrower.deleteMany();
+  await prisma.area.deleteMany();
+  await prisma.rolePermission.deleteMany();
+  await prisma.role.deleteMany();
+  await prisma.permission.deleteMany();
+  await prisma.loanScheme.deleteMany();
   await prisma.user.deleteMany();
 
   await prisma.user.create({
@@ -138,10 +248,62 @@ async function main() {
     },
   });
 
+  const areaByName = {};
+  const areaByCode = {};
+  for (const a of areas) {
+    const id = await nextId(prisma.area, 'AREA');
+    const row = await prisma.area.create({ data: { id, ...a } });
+    areaByName[a.name] = row;
+    areaByCode[a.code] = row;
+  }
+
   for (const b of borrowers) {
     await prisma.borrower.create({
-      data: { ...b, activeLoans: 0, totalOutstanding: 0, status: 'active' },
+      data: {
+        ...b,
+        activeLoans: 0,
+        totalOutstanding: 0,
+        status: 'active',
+        areaId: areaByName[b.village]?.id ?? null,
+      },
     });
+  }
+
+  for (const e of employees) {
+    const id = await nextId(prisma.employee, 'EMP');
+    await prisma.employee.create({
+      data: {
+        id,
+        name: e.name,
+        mobile: e.mobile,
+        status: e.status,
+        areaId: e.areaCode ? areaByCode[e.areaCode].id : null,
+      },
+    });
+  }
+
+  const permissionByKey = {};
+  for (const p of permissions) {
+    const id = await nextId(prisma.permission, 'PERM');
+    const row = await prisma.permission.create({ data: { id, ...p } });
+    permissionByKey[p.key] = row;
+  }
+
+  for (const [roleName, grants] of Object.entries(roleGrants)) {
+    const id = await nextId(prisma.role, 'ROLE');
+    await prisma.role.create({ data: { id, name: roleName, isSystem: true } });
+    await prisma.rolePermission.createMany({
+      data: Object.entries(grants).map(([key, granted]) => ({
+        roleId: id,
+        permissionId: permissionByKey[key].id,
+        granted,
+      })),
+    });
+  }
+
+  for (const s of loanSchemes) {
+    const id = await nextId(prisma.loanScheme, 'SCH');
+    await prisma.loanScheme.create({ data: { id, active: true, ...s } });
   }
 
   await prisma.loan.create({
