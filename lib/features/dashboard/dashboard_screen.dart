@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/models/collection_entry.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/stat_card.dart';
+import '../collections/providers/collection_providers.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(collectionSummaryProvider);
+    final entriesAsync = ref.watch(todayCollectionsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -105,7 +112,12 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          '₹24,850',
+                          summaryAsync.when(
+                            data: (s) =>
+                                AppFormatters.currency(s.totalCollected),
+                            loading: () => '...',
+                            error: (_, _) => '—',
+                          ),
                           style: AppTypography.displayLg.copyWith(
                             color: AppColors.primary,
                           ),
@@ -139,7 +151,9 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         SizedBox.expand(
                           child: CircularProgressIndicator(
-                            value: 0.828,
+                            value: summaryAsync.value == null
+                                ? 0
+                                : summaryAsync.value!.efficiency / 100,
                             strokeWidth: 8,
                             backgroundColor: AppColors.surfaceContainerHighest,
                             valueColor: const AlwaysStoppedAnimation(
@@ -148,7 +162,9 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '82.8%',
+                          summaryAsync.value == null
+                              ? '—'
+                              : '${summaryAsync.value!.efficiency.toStringAsFixed(1)}%',
                           style: AppTypography.titleLg.copyWith(
                             color: AppColors.primary,
                           ),
@@ -164,21 +180,37 @@ class DashboardScreen extends StatelessWidget {
             // Stats Grid
             StatCard(
               label: 'Today\'s Due',
-              value: '₹32,500',
+              value: summaryAsync.when(
+                data: (s) => AppFormatters.currency(s.totalDue),
+                loading: () => '...',
+                error: (_, _) => '—',
+              ),
               icon: Icons.calendar_today,
               accentColor: AppColors.primary,
             ),
             const SizedBox(height: AppSpacing.md),
             StatCard(
               label: 'Pending',
-              value: '₹7,650',
+              value: entriesAsync.when(
+                data: (entries) => AppFormatters.currency(
+                  _sumRemaining(entries, CollectionStatus.pending),
+                ),
+                loading: () => '...',
+                error: (_, _) => '—',
+              ),
               icon: Icons.pending_actions,
               accentColor: AppColors.warning,
             ),
             const SizedBox(height: AppSpacing.md),
             StatCard(
               label: 'Overdue',
-              value: '₹4,200',
+              value: entriesAsync.when(
+                data: (entries) => AppFormatters.currency(
+                  _sumRemaining(entries, CollectionStatus.overdue),
+                ),
+                loading: () => '...',
+                error: (_, _) => '—',
+              ),
               icon: Icons.warning,
               accentColor: AppColors.error,
             ),
@@ -225,5 +257,11 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _sumRemaining(List<CollectionEntry> entries, CollectionStatus status) {
+    return entries
+        .where((e) => e.status == status)
+        .fold<double>(0, (sum, e) => sum + e.totalDue - (e.amountPaid ?? 0));
   }
 }

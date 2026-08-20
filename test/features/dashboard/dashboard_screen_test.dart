@@ -11,9 +11,16 @@ void main() {
     await tester.pumpWidget(appUnderTest());
     await tester.pumpAndSettle();
 
+    // Derived from demo_seed.dart's todayCollections(): totalCollected
+    // 2200+62+500+2000=4762 of totalDue (amountDue only, excluding
+    // previousDue - see CollectionSummary._summarize) 2200+62+3050+640+
+    // 850+1520+2000=10322, i.e. 46.1% efficiency - not hardcoded
+    // literals, since the dashboard now reads collectionSummaryProvider
+    // like every other screen instead of carrying its own fabricated
+    // figures.
     expect(find.text('Good Morning, Arun'), findsOneWidget);
-    expect(find.text('₹24,850'), findsOneWidget);
-    expect(find.text('82.8%'), findsOneWidget);
+    expect(find.text('₹4,762'), findsOneWidget);
+    expect(find.text('46.1%'), findsOneWidget);
     expect(find.text('On track to meet daily target'), findsOneWidget);
     expect(find.text('Quick Actions'), findsOneWidget);
     expect(find.text('Collect Payment'), findsOneWidget);
