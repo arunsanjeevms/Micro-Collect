@@ -30,6 +30,9 @@ import '../../features/more/printer_settings_screen.dart';
 import '../../features/more/user_security_screen.dart';
 import '../../features/more/sync_center_screen.dart';
 import '../../data/repositories/collection_repository.dart';
+import '../../features/auth/login_screen.dart';
+import '../auth/auth_controller.dart';
+import '../auth/backend_mode.dart';
 import '../widgets/app_bottom_nav.dart';
 
 part 'app_router.g.dart';
@@ -40,11 +43,31 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 @riverpod
 GoRouter appRouter(Ref ref) {
+  // Watched (not read) at the top of build so a login/logout recreates the
+  // whole router with fresh state - redirect callbacks close over these
+  // captured values rather than calling ref.watch themselves, since a
+  // provider's ref can't be watched from inside an async/later callback.
+  final usesRemote = ref.watch(usesRemoteBackendProvider);
+  final isAuthenticated = ref.watch(authControllerProvider).isAuthenticated;
+  final requiresLogin = usesRemote && !isAuthenticated;
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/',
+    initialLocation: requiresLogin ? '/login' : '/',
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      if (!usesRemote) return null;
+      final loggingIn = state.matchedLocation == '/login';
+      if (!isAuthenticated && !loggingIn) return '/login';
+      if (isAuthenticated && loggingIn) return '/';
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/login',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const LoginScreen(),
+      ),
       // ─── Shell Route with Bottom Navigation ──────────────────
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
