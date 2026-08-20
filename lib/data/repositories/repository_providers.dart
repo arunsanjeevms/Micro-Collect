@@ -1,8 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'area_repository.dart';
 import 'borrower_repository.dart';
 import 'collection_repository.dart';
+import 'employee_repository.dart';
 import 'loan_repository.dart';
+import 'loan_scheme_repository.dart';
+import 'role_repository.dart';
 
 part 'repository_providers.g.dart';
 
@@ -32,6 +36,38 @@ LoanRepository loanRepository(Ref ref) {
 CollectionRepository collectionRepository(Ref ref) {
   throw UnimplementedError(
     'collectionRepositoryProvider must be overridden in ProviderScope - see '
+    'lib/data/mock/mock_bindings.dart',
+  );
+}
+
+@Riverpod(keepAlive: true)
+AreaRepository areaRepository(Ref ref) {
+  throw UnimplementedError(
+    'areaRepositoryProvider must be overridden in ProviderScope - see '
+    'lib/data/mock/mock_bindings.dart',
+  );
+}
+
+@Riverpod(keepAlive: true)
+EmployeeRepository employeeRepository(Ref ref) {
+  throw UnimplementedError(
+    'employeeRepositoryProvider must be overridden in ProviderScope - see '
+    'lib/data/mock/mock_bindings.dart',
+  );
+}
+
+@Riverpod(keepAlive: true)
+LoanSchemeRepository loanSchemeRepository(Ref ref) {
+  throw UnimplementedError(
+    'loanSchemeRepositoryProvider must be overridden in ProviderScope - see '
+    'lib/data/mock/mock_bindings.dart',
+  );
+}
+
+@Riverpod(keepAlive: true)
+RoleRepository roleRepository(Ref ref) {
+  throw UnimplementedError(
+    'roleRepositoryProvider must be overridden in ProviderScope - see '
     'lib/data/mock/mock_bindings.dart',
   );
 }

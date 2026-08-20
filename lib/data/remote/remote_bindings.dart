@@ -3,10 +3,14 @@ import '../../core/auth/backend_mode.dart';
 import '../../core/data/data_revision.dart';
 import '../repositories/repository_providers.dart';
 import 'api_client.dart';
+import 'remote_area_repository.dart';
 import 'remote_borrower_repository.dart';
 import 'remote_change_feed.dart';
 import 'remote_collection_repository.dart';
+import 'remote_employee_repository.dart';
 import 'remote_loan_repository.dart';
+import 'remote_loan_scheme_repository.dart';
+import 'remote_role_repository.dart';
 
 /// Every ProviderScope override the real Node/MySQL backend needs -
 /// overrides the same three repository providers and changeFeedProvider
@@ -42,6 +46,26 @@ remoteBackendOverrides() {
       (ref) => RemoteCollectionRepository(
         ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
         changeFeed,
+      ),
+    ),
+    areaRepositoryProvider.overrideWith(
+      (ref) => RemoteAreaRepository(
+        ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+      ),
+    ),
+    employeeRepositoryProvider.overrideWith(
+      (ref) => RemoteEmployeeRepository(
+        ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+      ),
+    ),
+    loanSchemeRepositoryProvider.overrideWith(
+      (ref) => RemoteLoanSchemeRepository(
+        ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
+      ),
+    ),
+    roleRepositoryProvider.overrideWith(
+      (ref) => RemoteRoleRepository(
+        ApiClient(tokenProvider: () => ref.read(authControllerProvider).token),
       ),
     ),
   ];

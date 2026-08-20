@@ -1,8 +1,12 @@
+import '../../core/models/area.dart';
 import '../../core/models/borrower.dart';
 import '../../core/models/collection_entry.dart';
+import '../../core/models/employee.dart';
 import '../../core/models/installment.dart';
 import '../../core/models/loan.dart';
+import '../../core/models/loan_scheme.dart';
 import '../../core/models/payment.dart';
+import '../../core/models/role.dart';
 import '../repositories/collection_repository.dart';
 
 /// Hand-written JSON mapping for the API's responses. The domain models
@@ -110,3 +114,60 @@ CollectionSummary collectionSummaryFromJson(Map<String, dynamic> j) =>
       overdueCount: j['overdueCount'] as int,
       partialCount: j['partialCount'] as int,
     );
+
+Area areaFromJson(Map<String, dynamic> j) => Area(
+  id: j['id'] as String,
+  code: j['code'] as String,
+  name: j['name'] as String,
+  active: j['active'] as bool,
+  customers: j['customers'] as int,
+  activeLoans: j['activeLoans'] as int,
+  outstanding: _num(j['outstanding']),
+);
+
+Employee employeeFromJson(Map<String, dynamic> j) => Employee(
+  id: j['id'] as String,
+  name: j['name'] as String,
+  mobile: j['mobile'] as String,
+  areaId: j['areaId'] as String?,
+  areaName: j['areaName'] as String?,
+  status: EmployeeStatus.values.byName(j['status'] as String),
+  joinDate: _date(j['joinDate']),
+);
+
+LoanScheme loanSchemeFromJson(Map<String, dynamic> j) => LoanScheme(
+  id: j['id'] as String,
+  code: j['code'] as String,
+  name: j['name'] as String,
+  active: j['active'] as bool,
+  principalMin: _num(j['principalMin']),
+  principalMax: _num(j['principalMax']),
+  tenureMin: j['tenureMin'] as int,
+  tenureMax: j['tenureMax'] as int,
+  tenureUnit: j['tenureUnit'] as String,
+  frequency: j['frequency'] as String,
+);
+
+Permission _permissionFromJson(Map<String, dynamic> j) => Permission(
+  id: j['id'] as String,
+  key: j['key'] as String,
+  label: j['label'] as String,
+  granted: j['granted'] as bool,
+);
+
+PermissionGroup _permissionGroupFromJson(Map<String, dynamic> j) =>
+    PermissionGroup(
+      group: j['group'] as String,
+      permissions: (j['permissions'] as List)
+          .map((e) => _permissionFromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Role roleFromJson(Map<String, dynamic> j) => Role(
+  id: j['id'] as String,
+  name: j['name'] as String,
+  isSystem: j['isSystem'] as bool,
+  permissionGroups: (j['permissionGroups'] as List)
+      .map((e) => _permissionGroupFromJson(e as Map<String, dynamic>))
+      .toList(),
+);

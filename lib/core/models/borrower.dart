@@ -22,6 +22,7 @@ abstract class Borrower with _$Borrower {
     required int activeLoans,
     required double totalOutstanding,
     required BorrowerStatus status,
+    String? areaId,
   }) = _Borrower;
 
   String get initials {

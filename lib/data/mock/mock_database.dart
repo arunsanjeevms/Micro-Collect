@@ -3,19 +3,38 @@ import 'dart:async';
 import '../../core/data/change_feed.dart';
 import '../../core/data/entity_kind.dart';
 import '../../core/errors/app_exception.dart';
+import '../../core/models/area.dart';
 import '../../core/models/borrower.dart';
+import '../../core/models/employee.dart';
 import '../../core/models/installment.dart';
 import '../../core/models/loan.dart';
+import '../../core/models/loan_scheme.dart';
 import '../../core/models/collection_entry.dart';
 import '../../core/models/daily_collection.dart';
 import '../../core/models/payment.dart';
+import '../../core/models/role.dart';
 import '../../core/utils/loan_calculator.dart';
 import '../../core/utils/payment_allocator.dart';
 import '../../core/utils/schedule_builder.dart';
+import '../repositories/area_repository.dart';
 import '../repositories/borrower_repository.dart';
 import '../repositories/collection_repository.dart';
+import '../repositories/employee_repository.dart';
 import '../repositories/loan_repository.dart';
+import '../repositories/loan_scheme_repository.dart';
 import 'demo_seed.dart';
+
+/// Internal mock storage for one role's permission grants, keyed by
+/// permission id - matches the backend's RolePermission join table.
+class _RoleRecord {
+  _RoleRecord({required this.id, required this.name, required this.isSystem})
+    : grants = {};
+
+  final String id;
+  final String name;
+  final bool isSystem;
+  final Map<String, bool> grants; // permissionId -> granted
+}
 
 /// The single in-memory store every mock repository reads and writes
 /// through. Entities cross-reference by id (a payment touches a loan, its
@@ -33,6 +52,13 @@ class MockDatabase implements ChangeFeed {
   final Map<String, CollectionEntry> _collections = {};
   final Map<String, Payment> _payments = {};
   List<DailyCollection> _weeklyCollections = [];
+
+  final Map<String, Area> _areas = {};
+  final Map<String, Employee> _employees = {};
+  final Map<String, LoanScheme> _loanSchemes = {};
+  final Map<String, ({String key, String label, String group})> _permissions =
+      {};
+  final Map<String, _RoleRecord> _roles = {};
 
   final _changesController = StreamController<DataChange>.broadcast();
 
@@ -336,7 +362,228 @@ class MockDatabase implements ChangeFeed {
     );
   }
 
+  // ─── Areas ──────────────────────────────────────────────────────
+
+  Area _areaWithStats(Area base) {
+    final assigned = _borrowers.values.where((b) => b.areaId == base.id);
+    return base.copyWith(
+      customers: assigned.length,
+      activeLoans: assigned.fold<int>(0, (sum, b) => sum + b.activeLoans),
+      outstanding: assigned.fold<double>(
+        0,
+        (sum, b) => sum + b.totalOutstanding,
+      ),
+    );
+  }
+
+  List<Area> areas() =>
+      _areas.values.map(_areaWithStats).toList()
+        ..sort((a, b) => a.id.compareTo(b.id));
+
+  Area createArea(AreaDraft draft) {
+    if (_areas.values.any((a) => a.code == draft.code)) {
+      throw const ValidationException('An area with this code already exists');
+    }
+    final id = _nextId('AREA', _areas.keys);
+    final area = Area(
+      id: id,
+      code: draft.code,
+      name: draft.name,
+      active: draft.active,
+      customers: 0,
+      activeLoans: 0,
+      outstanding: 0,
+    );
+    _areas[id] = area;
+    _emit(const DataChange({EntityKind.borrower}));
+    return _areaWithStats(area);
+  }
+
+  Area updateArea(String id, AreaPatch patch) {
+    final existing = _areas[id];
+    if (existing == null) throw NotFoundException('Area', id);
+    final updated = existing.copyWith(
+      code: patch.code ?? existing.code,
+      name: patch.name ?? existing.name,
+      active: patch.active ?? existing.active,
+    );
+    _areas[id] = updated;
+    _emit(const DataChange({EntityKind.borrower}));
+    return _areaWithStats(updated);
+  }
+
+  void deleteArea(String id) {
+    if (!_areas.containsKey(id)) throw NotFoundException('Area', id);
+    final hasBorrowers = _borrowers.values.any((b) => b.areaId == id);
+    final hasEmployees = _employees.values.any((e) => e.areaId == id);
+    if (hasBorrowers || hasEmployees) {
+      throw const ValidationException(
+        'This area still has borrowers or employees assigned - reassign them first',
+      );
+    }
+    _areas.remove(id);
+    _emit(const DataChange({EntityKind.borrower}));
+  }
+
+  // ─── Employees ──────────────────────────────────────────────────
+
+  Employee _withAreaName(Employee e) =>
+      e.areaId == null ? e : e.copyWith(areaName: _areas[e.areaId]?.name);
+
+  List<Employee> employees() =>
+      _employees.values.map(_withAreaName).toList()
+        ..sort((a, b) => a.id.compareTo(b.id));
+
+  Employee createEmployee(EmployeeDraft draft) {
+    final id = _nextId('EMP', _employees.keys);
+    final employee = Employee(
+      id: id,
+      name: draft.name,
+      mobile: draft.mobile,
+      areaId: draft.areaId,
+      status: draft.status,
+      joinDate: DateTime.now(),
+    );
+    _employees[id] = employee;
+    _emit(const DataChange({EntityKind.borrower}));
+    return _withAreaName(employee);
+  }
+
+  Employee updateEmployee(String id, EmployeePatch patch) {
+    final existing = _employees[id];
+    if (existing == null) throw NotFoundException('Employee', id);
+    final updated = existing.copyWith(
+      name: patch.name ?? existing.name,
+      mobile: patch.mobile ?? existing.mobile,
+      areaId: patch.areaId ?? existing.areaId,
+      status: patch.status ?? existing.status,
+    );
+    _employees[id] = updated;
+    _emit(const DataChange({EntityKind.borrower}));
+    return _withAreaName(updated);
+  }
+
+  void deleteEmployee(String id) {
+    if (!_employees.containsKey(id)) throw NotFoundException('Employee', id);
+    _employees.remove(id);
+    _emit(const DataChange({EntityKind.borrower}));
+  }
+
+  // ─── Loan Schemes ───────────────────────────────────────────────
+
+  List<LoanScheme> loanSchemes() =>
+      _loanSchemes.values.toList()..sort((a, b) => a.id.compareTo(b.id));
+
+  LoanScheme createLoanScheme(LoanSchemeDraft draft) {
+    if (draft.principalMin > draft.principalMax) {
+      throw const ValidationException(
+        'principalMin must not exceed principalMax',
+      );
+    }
+    if (draft.tenureMin > draft.tenureMax) {
+      throw const ValidationException('tenureMin must not exceed tenureMax');
+    }
+    final id = _nextId('SCH', _loanSchemes.keys);
+    final scheme = LoanScheme(
+      id: id,
+      code: draft.code,
+      name: draft.name,
+      active: draft.active,
+      principalMin: draft.principalMin,
+      principalMax: draft.principalMax,
+      tenureMin: draft.tenureMin,
+      tenureMax: draft.tenureMax,
+      tenureUnit: draft.tenureUnit,
+      frequency: draft.frequency,
+    );
+    _loanSchemes[id] = scheme;
+    _emit(const DataChange({EntityKind.loan}));
+    return scheme;
+  }
+
+  LoanScheme setLoanSchemeActive(String id, bool active) {
+    final existing = _loanSchemes[id];
+    if (existing == null) throw NotFoundException('Loan scheme', id);
+    final updated = existing.copyWith(active: active);
+    _loanSchemes[id] = updated;
+    _emit(const DataChange({EntityKind.loan}));
+    return updated;
+  }
+
+  void deleteLoanScheme(String id) {
+    if (!_loanSchemes.containsKey(id)) {
+      throw NotFoundException('Loan scheme', id);
+    }
+    _loanSchemes.remove(id);
+    _emit(const DataChange({EntityKind.loan}));
+  }
+
+  // ─── Roles & Permissions ────────────────────────────────────────
+
+  Role _roleWithPermissions(_RoleRecord record) {
+    final groups = <String, List<Permission>>{};
+    for (final permission in _permissions.entries) {
+      groups
+          .putIfAbsent(permission.value.group, () => [])
+          .add(
+            Permission(
+              id: permission.key,
+              key: permission.value.key,
+              label: permission.value.label,
+              granted: record.grants[permission.key] ?? false,
+            ),
+          );
+    }
+    return Role(
+      id: record.id,
+      name: record.name,
+      isSystem: record.isSystem,
+      permissionGroups: groups.entries
+          .map((e) => PermissionGroup(group: e.key, permissions: e.value))
+          .toList(),
+    );
+  }
+
+  List<Role> roles() =>
+      _roles.values.map(_roleWithPermissions).toList()
+        ..sort((a, b) => a.id.compareTo(b.id));
+
+  Role createRole(String name) {
+    if (_roles.values.any((r) => r.name == name)) {
+      throw const ValidationException('A role with this name already exists');
+    }
+    final id = _nextId('ROLE', _roles.keys);
+    final record = _RoleRecord(id: id, name: name, isSystem: false);
+    _roles[id] = record;
+    _emit(const DataChange({EntityKind.sync}));
+    return _roleWithPermissions(record);
+  }
+
+  Role setRolePermission(String roleId, String permissionId, bool granted) {
+    final record = _roles[roleId];
+    if (record == null) throw NotFoundException('Role', roleId);
+    if (!_permissions.containsKey(permissionId)) {
+      throw NotFoundException('Permission', permissionId);
+    }
+    record.grants[permissionId] = granted;
+    _emit(const DataChange({EntityKind.sync}));
+    return _roleWithPermissions(record);
+  }
+
+  void deleteRole(String id) {
+    final record = _roles[id];
+    if (record == null) throw NotFoundException('Role', id);
+    if (record.isSystem) {
+      throw const ValidationException('System roles cannot be deleted');
+    }
+    _roles.remove(id);
+    _emit(const DataChange({EntityKind.sync}));
+  }
+
   void loadDemo() {
+    _areas
+      ..clear()
+      ..addEntries(DemoSeed.areas().map((a) => MapEntry(a.id, a)));
     _borrowers
       ..clear()
       ..addEntries(DemoSeed.borrowers().map((b) => MapEntry(b.id, b)));
@@ -351,6 +598,32 @@ class MockDatabase implements ChangeFeed {
       );
     _payments.clear();
     _weeklyCollections = DemoSeed.weeklyCollections(now);
+    _employees
+      ..clear()
+      ..addEntries(DemoSeed.employees().map((e) => MapEntry(e.id, e)));
+    _loanSchemes
+      ..clear()
+      ..addEntries(DemoSeed.loanSchemes().map((s) => MapEntry(s.id, s)));
+    _permissions
+      ..clear()
+      ..addAll(DemoSeed.permissions());
+    _roles
+      ..clear()
+      ..addEntries(
+        DemoSeed.roles().map((r) {
+          final record = _RoleRecord(
+            id: r.id,
+            name: r.name,
+            isSystem: r.isSystem,
+          );
+          for (final group in r.permissionGroups) {
+            for (final p in group.permissions) {
+              record.grants[p.id] = p.granted;
+            }
+          }
+          return MapEntry(r.id, record);
+        }),
+      );
     for (final id in _borrowers.keys.toList()) {
       _recomputeBorrower(id);
     }
@@ -358,11 +631,16 @@ class MockDatabase implements ChangeFeed {
   }
 
   void reset() {
+    _areas.clear();
     _borrowers.clear();
     _loans.clear();
     _collections.clear();
     _payments.clear();
     _weeklyCollections = [];
+    _employees.clear();
+    _loanSchemes.clear();
+    _permissions.clear();
+    _roles.clear();
     _emit(const DataChange.all());
   }
 

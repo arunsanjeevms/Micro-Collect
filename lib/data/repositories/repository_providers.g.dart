@@ -161,3 +161,181 @@ final class CollectionRepositoryProvider
 
 String _$collectionRepositoryHash() =>
     r'2ba0d460e5e3de235c81b356780f013b078029cd';
+
+@ProviderFor(areaRepository)
+final areaRepositoryProvider = AreaRepositoryProvider._();
+
+final class AreaRepositoryProvider
+    extends $FunctionalProvider<AreaRepository, AreaRepository, AreaRepository>
+    with $Provider<AreaRepository> {
+  AreaRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'areaRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$areaRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<AreaRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AreaRepository create(Ref ref) {
+    return areaRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AreaRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AreaRepository>(value),
+    );
+  }
+}
+
+String _$areaRepositoryHash() => r'662b52a49cc10bf17947d56b1fcdfc4842ccb40c';
+
+@ProviderFor(employeeRepository)
+final employeeRepositoryProvider = EmployeeRepositoryProvider._();
+
+final class EmployeeRepositoryProvider
+    extends
+        $FunctionalProvider<
+          EmployeeRepository,
+          EmployeeRepository,
+          EmployeeRepository
+        >
+    with $Provider<EmployeeRepository> {
+  EmployeeRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'employeeRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$employeeRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<EmployeeRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EmployeeRepository create(Ref ref) {
+    return employeeRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EmployeeRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EmployeeRepository>(value),
+    );
+  }
+}
+
+String _$employeeRepositoryHash() =>
+    r'0518868ba7ef47d2c911c6c4668672b7b5a76ae8';
+
+@ProviderFor(loanSchemeRepository)
+final loanSchemeRepositoryProvider = LoanSchemeRepositoryProvider._();
+
+final class LoanSchemeRepositoryProvider
+    extends
+        $FunctionalProvider<
+          LoanSchemeRepository,
+          LoanSchemeRepository,
+          LoanSchemeRepository
+        >
+    with $Provider<LoanSchemeRepository> {
+  LoanSchemeRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'loanSchemeRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$loanSchemeRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<LoanSchemeRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LoanSchemeRepository create(Ref ref) {
+    return loanSchemeRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LoanSchemeRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LoanSchemeRepository>(value),
+    );
+  }
+}
+
+String _$loanSchemeRepositoryHash() =>
+    r'd2f5376b74887a254ea52e917ee16e124aa20b30';
+
+@ProviderFor(roleRepository)
+final roleRepositoryProvider = RoleRepositoryProvider._();
+
+final class RoleRepositoryProvider
+    extends $FunctionalProvider<RoleRepository, RoleRepository, RoleRepository>
+    with $Provider<RoleRepository> {
+  RoleRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'roleRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$roleRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<RoleRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  RoleRepository create(Ref ref) {
+    return roleRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RoleRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RoleRepository>(value),
+    );
+  }
+}
+
+String _$roleRepositoryHash() => r'45eef7790e3ff5bffa9c01b044676e720114bfba';

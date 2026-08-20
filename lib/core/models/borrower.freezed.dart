@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Borrower {
 
- String get id; String get name; String get mobile; String get aadhaar; String get village; String get address; String get pinCode; String? get photoUrl; DateTime get joinDate; int get activeLoans; double get totalOutstanding; BorrowerStatus get status;
+ String get id; String get name; String get mobile; String get aadhaar; String get village; String get address; String get pinCode; String? get photoUrl; DateTime get joinDate; int get activeLoans; double get totalOutstanding; BorrowerStatus get status; String? get areaId;
 /// Create a copy of Borrower
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +26,16 @@ $BorrowerCopyWith<Borrower> get copyWith => _$BorrowerCopyWithImpl<Borrower>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Borrower&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.mobile, mobile) || other.mobile == mobile)&&(identical(other.aadhaar, aadhaar) || other.aadhaar == aadhaar)&&(identical(other.village, village) || other.village == village)&&(identical(other.address, address) || other.address == address)&&(identical(other.pinCode, pinCode) || other.pinCode == pinCode)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.activeLoans, activeLoans) || other.activeLoans == activeLoans)&&(identical(other.totalOutstanding, totalOutstanding) || other.totalOutstanding == totalOutstanding)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Borrower&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.mobile, mobile) || other.mobile == mobile)&&(identical(other.aadhaar, aadhaar) || other.aadhaar == aadhaar)&&(identical(other.village, village) || other.village == village)&&(identical(other.address, address) || other.address == address)&&(identical(other.pinCode, pinCode) || other.pinCode == pinCode)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.activeLoans, activeLoans) || other.activeLoans == activeLoans)&&(identical(other.totalOutstanding, totalOutstanding) || other.totalOutstanding == totalOutstanding)&&(identical(other.status, status) || other.status == status)&&(identical(other.areaId, areaId) || other.areaId == areaId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,mobile,aadhaar,village,address,pinCode,photoUrl,joinDate,activeLoans,totalOutstanding,status);
+int get hashCode => Object.hash(runtimeType,id,name,mobile,aadhaar,village,address,pinCode,photoUrl,joinDate,activeLoans,totalOutstanding,status,areaId);
 
 @override
 String toString() {
-  return 'Borrower(id: $id, name: $name, mobile: $mobile, aadhaar: $aadhaar, village: $village, address: $address, pinCode: $pinCode, photoUrl: $photoUrl, joinDate: $joinDate, activeLoans: $activeLoans, totalOutstanding: $totalOutstanding, status: $status)';
+  return 'Borrower(id: $id, name: $name, mobile: $mobile, aadhaar: $aadhaar, village: $village, address: $address, pinCode: $pinCode, photoUrl: $photoUrl, joinDate: $joinDate, activeLoans: $activeLoans, totalOutstanding: $totalOutstanding, status: $status, areaId: $areaId)';
 }
 
 
@@ -46,7 +46,7 @@ abstract mixin class $BorrowerCopyWith<$Res>  {
   factory $BorrowerCopyWith(Borrower value, $Res Function(Borrower) _then) = _$BorrowerCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String mobile, String aadhaar, String village, String address, String pinCode, String? photoUrl, DateTime joinDate, int activeLoans, double totalOutstanding, BorrowerStatus status
+ String id, String name, String mobile, String aadhaar, String village, String address, String pinCode, String? photoUrl, DateTime joinDate, int activeLoans, double totalOutstanding, BorrowerStatus status, String? areaId
 });
 
 
@@ -63,7 +63,7 @@ class _$BorrowerCopyWithImpl<$Res>
 
 /// Create a copy of Borrower
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? mobile = null,Object? aadhaar = null,Object? village = null,Object? address = null,Object? pinCode = null,Object? photoUrl = freezed,Object? joinDate = null,Object? activeLoans = null,Object? totalOutstanding = null,Object? status = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? mobile = null,Object? aadhaar = null,Object? village = null,Object? address = null,Object? pinCode = null,Object? photoUrl = freezed,Object? joinDate = null,Object? activeLoans = null,Object? totalOutstanding = null,Object? status = null,Object? areaId = freezed,}) {
   return _then(Borrower(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -77,7 +77,8 @@ as String?,joinDate: null == joinDate ? _self.joinDate : joinDate // ignore: cas
 as DateTime,activeLoans: null == activeLoans ? _self.activeLoans : activeLoans // ignore: cast_nullable_to_non_nullable
 as int,totalOutstanding: null == totalOutstanding ? _self.totalOutstanding : totalOutstanding // ignore: cast_nullable_to_non_nullable
 as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as BorrowerStatus,
+as BorrowerStatus,areaId: freezed == areaId ? _self.areaId : areaId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -162,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String mobile,  String aadhaar,  String village,  String address,  String pinCode,  String? photoUrl,  DateTime joinDate,  int activeLoans,  double totalOutstanding,  BorrowerStatus status)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String mobile,  String aadhaar,  String village,  String address,  String pinCode,  String? photoUrl,  DateTime joinDate,  int activeLoans,  double totalOutstanding,  BorrowerStatus status,  String? areaId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Borrower() when $default != null:
-return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_that.address,_that.pinCode,_that.photoUrl,_that.joinDate,_that.activeLoans,_that.totalOutstanding,_that.status);case _:
+return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_that.address,_that.pinCode,_that.photoUrl,_that.joinDate,_that.activeLoans,_that.totalOutstanding,_that.status,_that.areaId);case _:
   return orElse();
 
 }
@@ -183,10 +184,10 @@ return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String mobile,  String aadhaar,  String village,  String address,  String pinCode,  String? photoUrl,  DateTime joinDate,  int activeLoans,  double totalOutstanding,  BorrowerStatus status)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String mobile,  String aadhaar,  String village,  String address,  String pinCode,  String? photoUrl,  DateTime joinDate,  int activeLoans,  double totalOutstanding,  BorrowerStatus status,  String? areaId)  $default,) {final _that = this;
 switch (_that) {
 case _Borrower():
-return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_that.address,_that.pinCode,_that.photoUrl,_that.joinDate,_that.activeLoans,_that.totalOutstanding,_that.status);case _:
+return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_that.address,_that.pinCode,_that.photoUrl,_that.joinDate,_that.activeLoans,_that.totalOutstanding,_that.status,_that.areaId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +204,10 @@ return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String mobile,  String aadhaar,  String village,  String address,  String pinCode,  String? photoUrl,  DateTime joinDate,  int activeLoans,  double totalOutstanding,  BorrowerStatus status)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String mobile,  String aadhaar,  String village,  String address,  String pinCode,  String? photoUrl,  DateTime joinDate,  int activeLoans,  double totalOutstanding,  BorrowerStatus status,  String? areaId)?  $default,) {final _that = this;
 switch (_that) {
 case _Borrower() when $default != null:
-return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_that.address,_that.pinCode,_that.photoUrl,_that.joinDate,_that.activeLoans,_that.totalOutstanding,_that.status);case _:
+return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_that.address,_that.pinCode,_that.photoUrl,_that.joinDate,_that.activeLoans,_that.totalOutstanding,_that.status,_that.areaId);case _:
   return null;
 
 }
@@ -218,7 +219,7 @@ return $default(_that.id,_that.name,_that.mobile,_that.aadhaar,_that.village,_th
 
 
 class _Borrower extends Borrower {
-  const _Borrower({required this.id, required this.name, required this.mobile, required this.aadhaar, required this.village, required this.address, required this.pinCode, this.photoUrl, required this.joinDate, required this.activeLoans, required this.totalOutstanding, required this.status}): super._();
+  const _Borrower({required this.id, required this.name, required this.mobile, required this.aadhaar, required this.village, required this.address, required this.pinCode, this.photoUrl, required this.joinDate, required this.activeLoans, required this.totalOutstanding, required this.status, this.areaId}): super._();
   
 
 @override final  String id;
@@ -233,6 +234,7 @@ class _Borrower extends Borrower {
 @override final  int activeLoans;
 @override final  double totalOutstanding;
 @override final  BorrowerStatus status;
+@override final  String? areaId;
 
 /// Create a copy of Borrower
 /// with the given fields replaced by the non-null parameter values.
@@ -244,16 +246,16 @@ _$BorrowerCopyWith<_Borrower> get copyWith => __$BorrowerCopyWithImpl<_Borrower>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Borrower&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.mobile, mobile) || other.mobile == mobile)&&(identical(other.aadhaar, aadhaar) || other.aadhaar == aadhaar)&&(identical(other.village, village) || other.village == village)&&(identical(other.address, address) || other.address == address)&&(identical(other.pinCode, pinCode) || other.pinCode == pinCode)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.activeLoans, activeLoans) || other.activeLoans == activeLoans)&&(identical(other.totalOutstanding, totalOutstanding) || other.totalOutstanding == totalOutstanding)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Borrower&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.mobile, mobile) || other.mobile == mobile)&&(identical(other.aadhaar, aadhaar) || other.aadhaar == aadhaar)&&(identical(other.village, village) || other.village == village)&&(identical(other.address, address) || other.address == address)&&(identical(other.pinCode, pinCode) || other.pinCode == pinCode)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.activeLoans, activeLoans) || other.activeLoans == activeLoans)&&(identical(other.totalOutstanding, totalOutstanding) || other.totalOutstanding == totalOutstanding)&&(identical(other.status, status) || other.status == status)&&(identical(other.areaId, areaId) || other.areaId == areaId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,mobile,aadhaar,village,address,pinCode,photoUrl,joinDate,activeLoans,totalOutstanding,status);
+int get hashCode => Object.hash(runtimeType,id,name,mobile,aadhaar,village,address,pinCode,photoUrl,joinDate,activeLoans,totalOutstanding,status,areaId);
 
 @override
 String toString() {
-  return 'Borrower(id: $id, name: $name, mobile: $mobile, aadhaar: $aadhaar, village: $village, address: $address, pinCode: $pinCode, photoUrl: $photoUrl, joinDate: $joinDate, activeLoans: $activeLoans, totalOutstanding: $totalOutstanding, status: $status)';
+  return 'Borrower(id: $id, name: $name, mobile: $mobile, aadhaar: $aadhaar, village: $village, address: $address, pinCode: $pinCode, photoUrl: $photoUrl, joinDate: $joinDate, activeLoans: $activeLoans, totalOutstanding: $totalOutstanding, status: $status, areaId: $areaId)';
 }
 
 
@@ -264,7 +266,7 @@ abstract mixin class _$BorrowerCopyWith<$Res> implements $BorrowerCopyWith<$Res>
   factory _$BorrowerCopyWith(_Borrower value, $Res Function(_Borrower) _then) = __$BorrowerCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String mobile, String aadhaar, String village, String address, String pinCode, String? photoUrl, DateTime joinDate, int activeLoans, double totalOutstanding, BorrowerStatus status
+ String id, String name, String mobile, String aadhaar, String village, String address, String pinCode, String? photoUrl, DateTime joinDate, int activeLoans, double totalOutstanding, BorrowerStatus status, String? areaId
 });
 
 
@@ -281,7 +283,7 @@ class __$BorrowerCopyWithImpl<$Res>
 
 /// Create a copy of Borrower
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? mobile = null,Object? aadhaar = null,Object? village = null,Object? address = null,Object? pinCode = null,Object? photoUrl = freezed,Object? joinDate = null,Object? activeLoans = null,Object? totalOutstanding = null,Object? status = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? mobile = null,Object? aadhaar = null,Object? village = null,Object? address = null,Object? pinCode = null,Object? photoUrl = freezed,Object? joinDate = null,Object? activeLoans = null,Object? totalOutstanding = null,Object? status = null,Object? areaId = freezed,}) {
   return _then(_Borrower(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -295,7 +297,8 @@ as String?,joinDate: null == joinDate ? _self.joinDate : joinDate // ignore: cas
 as DateTime,activeLoans: null == activeLoans ? _self.activeLoans : activeLoans // ignore: cast_nullable_to_non_nullable
 as int,totalOutstanding: null == totalOutstanding ? _self.totalOutstanding : totalOutstanding // ignore: cast_nullable_to_non_nullable
 as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as BorrowerStatus,
+as BorrowerStatus,areaId: freezed == areaId ? _self.areaId : areaId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

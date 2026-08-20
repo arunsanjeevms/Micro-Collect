@@ -1,11 +1,15 @@
 import '../../core/data/data_revision.dart';
 import '../dev/dev_settings_controller.dart';
 import '../repositories/repository_providers.dart';
+import 'mock_area_repository.dart';
 import 'mock_collection_repository.dart';
 import 'mock_borrower_repository.dart';
 import 'mock_database_provider.dart';
+import 'mock_employee_repository.dart';
 import 'mock_gateway.dart';
 import 'mock_loan_repository.dart';
+import 'mock_loan_scheme_repository.dart';
+import 'mock_role_repository.dart';
 
 /// Every ProviderScope override the mock backend needs. Swapping to a real
 /// backend later means replacing this one list with a different one that
@@ -36,6 +40,30 @@ mockBackendOverrides() {
     ),
     collectionRepositoryProvider.overrideWith(
       (ref) => MockCollectionRepository(
+        ref.watch(mockDatabaseProvider),
+        MockGateway(() => ref.read(devSettingsControllerProvider)),
+      ),
+    ),
+    areaRepositoryProvider.overrideWith(
+      (ref) => MockAreaRepository(
+        ref.watch(mockDatabaseProvider),
+        MockGateway(() => ref.read(devSettingsControllerProvider)),
+      ),
+    ),
+    employeeRepositoryProvider.overrideWith(
+      (ref) => MockEmployeeRepository(
+        ref.watch(mockDatabaseProvider),
+        MockGateway(() => ref.read(devSettingsControllerProvider)),
+      ),
+    ),
+    loanSchemeRepositoryProvider.overrideWith(
+      (ref) => MockLoanSchemeRepository(
+        ref.watch(mockDatabaseProvider),
+        MockGateway(() => ref.read(devSettingsControllerProvider)),
+      ),
+    ),
+    roleRepositoryProvider.overrideWith(
+      (ref) => MockRoleRepository(
         ref.watch(mockDatabaseProvider),
         MockGateway(() => ref.read(devSettingsControllerProvider)),
       ),

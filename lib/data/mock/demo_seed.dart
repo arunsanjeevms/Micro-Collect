@@ -1,10 +1,23 @@
+import '../../core/models/area.dart';
 import '../../core/models/borrower.dart';
 import '../../core/models/collection_entry.dart';
 import '../../core/models/daily_collection.dart';
+import '../../core/models/employee.dart';
 import '../../core/models/installment.dart';
 import '../../core/models/loan.dart';
+import '../../core/models/loan_scheme.dart';
+import '../../core/models/role.dart';
 import '../../core/utils/loan_calculator.dart';
 import '../../core/utils/schedule_builder.dart';
+
+// Real areas matching the villages already seeded below, rather than
+// Stitch's unrelated demo area names - kept in exact sync with
+// backend/prisma/seed.js's `areas` list.
+const _areaIdByVillage = {
+  'Kothapalli': 'AREA001',
+  'Rampur': 'AREA002',
+  'Chintalapudi': 'AREA003',
+};
 
 /// Deterministic sample data for the mock backend.
 ///
@@ -306,33 +319,31 @@ class DemoSeed {
   ];
 
   // ─── Weekly Collection Data (for charts) ───────────────────────
-  static List<DailyCollection> weeklyCollections(DateTime now) =>
-      List.generate(7, (i) {
-        final date = now.subtract(Duration(days: 6 - i));
-        const dues = [
-          28500.0,
-          31200.0,
-          24800.0,
-          35000.0,
-          29600.0,
-          32500.0,
-          30000.0,
-        ];
-        const collected = [
-          24850.0,
-          28400.0,
-          22100.0,
-          30500.0,
-          25200.0,
-          31800.0,
-          24850.0,
-        ];
-        return DailyCollection(
-          date: date,
-          collected: collected[i],
-          due: dues[i],
-        );
-      });
+  static List<DailyCollection> weeklyCollections(DateTime now) => List.generate(
+    7,
+    (i) {
+      final date = now.subtract(Duration(days: 6 - i));
+      const dues = [
+        28500.0,
+        31200.0,
+        24800.0,
+        35000.0,
+        29600.0,
+        32500.0,
+        30000.0,
+      ];
+      const collected = [
+        24850.0,
+        28400.0,
+        22100.0,
+        30500.0,
+        25200.0,
+        31800.0,
+        24850.0,
+      ];
+      return DailyCollection(date: date, collected: collected[i], due: dues[i]);
+    },
+  );
 
   static Borrower _borrower({
     required String id,
@@ -357,6 +368,7 @@ class DemoSeed {
       activeLoans: 0,
       totalOutstanding: 0,
       status: BorrowerStatus.active,
+      areaId: _areaIdByVillage[village],
     );
   }
 
@@ -520,4 +532,216 @@ class DemoSeed {
       status: InstallmentStatus.pending,
     ),
   ];
+
+  // ─── Areas ──────────────────────────────────────────────────────
+  // customers/activeLoans/outstanding are placeholders here -
+  // MockDatabase.loadDemo() recomputes them from the borrowers above via
+  // Borrower.areaId, the same way it recomputes borrower aggregates.
+  static List<Area> areas() => const [
+    Area(
+      id: 'AREA001',
+      code: 'KTP',
+      name: 'Kothapalli',
+      active: true,
+      customers: 0,
+      activeLoans: 0,
+      outstanding: 0,
+    ),
+    Area(
+      id: 'AREA002',
+      code: 'RAM',
+      name: 'Rampur',
+      active: true,
+      customers: 0,
+      activeLoans: 0,
+      outstanding: 0,
+    ),
+    Area(
+      id: 'AREA003',
+      code: 'CHN',
+      name: 'Chintalapudi',
+      active: true,
+      customers: 0,
+      activeLoans: 0,
+      outstanding: 0,
+    ),
+  ];
+
+  // ─── Employees ──────────────────────────────────────────────────
+  static List<Employee> employees() => [
+    Employee(
+      id: 'EMP001',
+      name: 'Arun Kumar',
+      mobile: '9000011111',
+      areaId: 'AREA001',
+      areaName: 'Kothapalli',
+      status: EmployeeStatus.active,
+      joinDate: DateTime(2024, 1, 5),
+    ),
+    Employee(
+      id: 'EMP002',
+      name: 'Priya Sharma',
+      mobile: '9000022222',
+      areaId: 'AREA002',
+      areaName: 'Rampur',
+      status: EmployeeStatus.active,
+      joinDate: DateTime(2024, 2, 10),
+    ),
+    Employee(
+      id: 'EMP003',
+      name: 'Rajesh Verma',
+      mobile: '9000033333',
+      areaId: 'AREA003',
+      areaName: 'Chintalapudi',
+      status: EmployeeStatus.onField,
+      joinDate: DateTime(2024, 3, 20),
+    ),
+    Employee(
+      id: 'EMP004',
+      name: 'Karthik S',
+      mobile: '9000044444',
+      status: EmployeeStatus.office,
+      joinDate: DateTime(2024, 4, 1),
+    ),
+  ];
+
+  // ─── Loan Schemes ───────────────────────────────────────────────
+  static List<LoanScheme> loanSchemes() => const [
+    LoanScheme(
+      id: 'SCH001',
+      code: 'WML-01',
+      name: 'Weekly Micro Loan',
+      active: true,
+      principalMin: 2000,
+      principalMax: 50000,
+      tenureMin: 20,
+      tenureMax: 50,
+      tenureUnit: 'Weeks',
+      frequency: 'weekly',
+    ),
+    LoanScheme(
+      id: 'SCH002',
+      code: 'MSL-02',
+      name: 'Monthly SME Loan',
+      active: true,
+      principalMin: 50000,
+      principalMax: 500000,
+      tenureMin: 6,
+      tenureMax: 36,
+      tenureUnit: 'Months',
+      frequency: 'monthly',
+    ),
+    LoanScheme(
+      id: 'SCH003',
+      code: 'DVL-03',
+      name: 'Daily Vendor Loan',
+      active: true,
+      principalMin: 1000,
+      principalMax: 10000,
+      tenureMin: 30,
+      tenureMax: 90,
+      tenureUnit: 'Days',
+      frequency: 'daily',
+    ),
+  ];
+
+  // ─── Roles & Permissions ────────────────────────────────────────
+  // Kept in exact sync with backend/prisma/seed.js's `permissions` and
+  // `roleGrants`, including matching PERM.../ROLE... ids, so both
+  // backends show identical Roles & Permissions content.
+  static Map<String, ({String key, String label, String group})>
+  permissions() => const {
+    'PERM001': (
+      key: 'collect_payments',
+      label: 'Can Collect Payments',
+      group: 'Core Functions',
+    ),
+    'PERM002': (
+      key: 'sync_offline_data',
+      label: 'Can Sync Offline Data',
+      group: 'Core Functions',
+    ),
+    'PERM003': (
+      key: 'register_customers',
+      label: 'Can Register Customers',
+      group: 'Core Functions',
+    ),
+    'PERM004': (
+      key: 'view_reports_personal',
+      label: 'Can View Reports (Personal)',
+      group: 'Reporting & Analytics',
+    ),
+    'PERM005': (
+      key: 'view_reports_branch',
+      label: 'Can View Branch Reports',
+      group: 'Reporting & Analytics',
+    ),
+    'PERM006': (
+      key: 'manage_users',
+      label: 'Can Manage Users',
+      group: 'System Settings',
+    ),
+  };
+
+  static List<Role> roles() {
+    final perms = permissions();
+
+    Permission perm(String id, bool granted) => Permission(
+      id: id,
+      key: perms[id]!.key,
+      label: perms[id]!.label,
+      granted: granted,
+    );
+
+    Role role(String id, String name, Map<String, bool> grants) {
+      final groups = <String, List<Permission>>{};
+      for (final entry in grants.entries) {
+        final group = perms[entry.key]!.group;
+        groups.putIfAbsent(group, () => []).add(perm(entry.key, entry.value));
+      }
+      return Role(
+        id: id,
+        name: name,
+        isSystem: true,
+        permissionGroups: groups.entries
+            .map((e) => PermissionGroup(group: e.key, permissions: e.value))
+            .toList(),
+      );
+    }
+
+    return [
+      role('ROLE001', 'Admin', {
+        'PERM001': true,
+        'PERM002': true,
+        'PERM003': true,
+        'PERM004': true,
+        'PERM005': true,
+        'PERM006': true,
+      }),
+      role('ROLE002', 'Manager', {
+        'PERM001': true,
+        'PERM002': true,
+        'PERM003': true,
+        'PERM004': true,
+        'PERM005': true,
+        'PERM006': false,
+      }),
+      role('ROLE003', 'Field Officer', {
+        'PERM001': true,
+        'PERM002': true,
+        'PERM003': true,
+        'PERM004': true,
+        'PERM005': false,
+        'PERM006': false,
+      }),
+      role('ROLE004', 'Cashier', {
+        'PERM001': true,
+        'PERM002': false,
+        'PERM003': false,
+        'PERM004': true,
+        'PERM005': false,
+        'PERM006': false,
+      }),
+    ];
+  }
 }
